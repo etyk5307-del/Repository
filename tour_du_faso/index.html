@@ -1,0 +1,550 @@
+<title>Tour du Faso 2026</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Mise en page : carnet de route opérationnel — bandeau, frise des 11 jours, carte des linéaires + fiche d'étape, analyse d'exposition, tableau. */
+:root {
+  --bg: #edf0ec; --surface: #ffffff; --surface-2: #f3f5f2; --ink: #17211b; --muted: #59665d; --faint: #8b978e; --line: #d4dbd5;
+  --accent: #00703c; --accent-ink: #ffffff; --warn: #d9480f; --crit: #c8102e; --ok: #2f7d32; --gold: #c99400;
+  --map-bg: #cfd9de; --land: #e6e2d6; --bfa: #f7f4ec; --border: #6d7a72; --adm: #a3ada6; --road: #b49a6e; --river: #4f8fc0; --transfer: #5c6670;
+  --f-display: "Barlow Semi Condensed", "Arial Narrow", sans-serif; --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0c1310; --surface: #121b17; --surface-2: #18241f; --ink: #e2ebe5; --muted: #95a59b; --faint: #67776d; --line: #24342c;
+  --accent: #3fbf7f; --accent-ink: #06130c; --warn: #ff8a4c; --crit: #ff5468; --ok: #6cc070; --gold: #f2c94c;
+  --map-bg: #091014; --land: #17211d; --bfa: #213029; --border: #8fa198; --adm: #4a5d53; --road: #8a7550; --river: #3f86c4; --transfer: #9aa5ae;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0c1310; --surface: #121b17; --surface-2: #18241f; --ink: #e2ebe5; --muted: #95a59b; --faint: #67776d; --line: #24342c;
+  --accent: #3fbf7f; --accent-ink: #06130c; --warn: #ff8a4c; --crit: #ff5468; --ok: #6cc070; --gold: #f2c94c;
+  --map-bg: #091014; --land: #17211d; --bfa: #213029; --border: #8fa198; --adm: #4a5d53; --road: #8a7550; --river: #3f86c4; --transfer: #9aa5ae;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 50; background: var(--surface); }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1560px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font-size: 1.45rem; } h3 { font-size: 1.08rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { border: 1px solid var(--line); background: var(--surface-2); padding: 6px 11px; border-radius: var(--radius); cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.masthead { background: var(--surface); border-bottom: 1px solid var(--line); }
+.masthead .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: flex-end; padding-block: 18px 14px; }
+.masthead h1 { font-size: clamp(1.6rem, 3.2vw, 2.4rem); line-height: 1.05; }
+.masthead h1 span { color: var(--muted); font-weight: 500; }
+.stripe { height: 4px; background: linear-gradient(90deg, #ef2b2d 0 50%, #009e49 50% 100%); }
+.mh-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.classif { font-family: var(--f-mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; padding: 4px 8px; border: 1px solid var(--warn); color: var(--warn); border-radius: 3px; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-top: 18px; }
+.kpi { background: var(--surface); padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
+.kpi .v { font-family: var(--f-display); font-size: 1.9rem; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: .9rem; color: var(--muted); font-weight: 500; }
+.kpi .d { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); }
+.kpi .ok { color: var(--ok); }
+
+/* Frise des jours */
+.days { display: grid; grid-template-columns: repeat(11, minmax(86px, 1fr)); gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-top: 16px; }
+.day { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 7px 8px; text-align: left; cursor: pointer; display: grid; gap: 1px; border-top: 4px solid var(--c); min-width: 0; }
+.day[aria-pressed="true"] { outline: 2px solid var(--c); background: var(--surface-2); }
+.day b { font-family: var(--f-display); font-size: 1.05rem; }
+.day small { color: var(--muted); font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+section.block { margin-block: 22px; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.sec-head p { color: var(--muted); max-width: 72ch; }
+
+.mapgrid { display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 14px; }
+@media (max-width: 1080px) { .mapgrid { grid-template-columns: minmax(0, 1fr); } }
+.mapbox { position: relative; height: 700px; max-height: 84vh; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--map-bg); }
+@media (max-width: 700px) { .mapbox { height: 540px; } .legend { display: none; } .kpis .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+#map { position: absolute; inset: 0; }
+.panel { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; }
+.mapctl { position: absolute; z-index: 5; top: 10px; left: 10px; right: 10px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.mapctl > * { pointer-events: auto; }
+.ltog { border: 1px solid var(--line); background: var(--surface-2); border-radius: 4px; padding: 3px 8px; font-size: .76rem; cursor: pointer; }
+.ltog[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.seg { display: inline-flex; align-items: center; gap: 4px; font-size: .76rem; }
+.legend { position: absolute; z-index: 5; left: 10px; bottom: 10px; font-size: .74rem; display: grid; gap: 3px; max-width: 230px; }
+.legend .row { display: flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 18px; height: 3px; background: var(--c); border-radius: 2px; }
+.legend i.dash { background: repeating-linear-gradient(90deg, var(--transfer) 0 4px, transparent 4px 7px); }
+.legend i.dot { width: 9px; height: 9px; border-radius: 50%; }
+.playbar { position: absolute; z-index: 5; right: 10px; bottom: 10px; display: flex; gap: 8px; align-items: center; }
+.bigday { position: absolute; z-index: 4; right: 14px; top: 56px; text-align: right; pointer-events: none; font-family: var(--f-display); }
+.bigday b { display: block; font-size: 1.9rem; line-height: 1; }
+.bigday span { color: var(--muted); font-size: .95rem; }
+.attrib { position: absolute; right: 8px; bottom: 54px; font-size: .64rem; color: var(--muted); z-index: 4; pointer-events: none; }
+.deck-tooltip { font-family: var(--f-body) !important; font-size: 12px !important; background: var(--surface) !important; color: var(--ink) !important; border: 1px solid var(--line); border-radius: 6px; max-width: 300px; padding: 8px 10px !important; }
+
+.side { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; min-width: 0; max-height: 700px; }
+.side-head { padding: 12px 14px; border-bottom: 1px solid var(--line); border-top: 5px solid var(--c, var(--accent)); border-radius: var(--radius) var(--radius) 0 0; }
+.side-body { padding: 12px 14px; overflow-y: auto; display: grid; gap: 12px; align-content: start; }
+.kv { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 5px 10px; font-size: .86rem; margin: 0; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; min-width: 0; }
+.pill { display: inline-block; font-family: var(--f-mono); font-size: .68rem; padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.big3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.big3 div { background: var(--surface-2); padding: 7px 8px; }
+.big3 b { display: block; font-family: var(--f-display); font-size: 1.3rem; }
+.big3 span { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.watch { margin: 0; padding-left: 1.1rem; display: grid; gap: 5px; font-size: .86rem; }
+.watch li::marker { color: var(--warn); }
+
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.card .sub { color: var(--muted); font-size: .84rem; }
+.chart { width: 100%; height: 300px; }
+.drop { border: 2px dashed var(--line); border-radius: var(--radius); padding: 14px; text-align: center; color: var(--muted); }
+.drop.over { border-color: var(--accent); background: var(--surface-2); }
+textarea { width: 100%; min-height: 90px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; font-family: var(--f-mono); font-size: .78rem; }
+.tablewrap { overflow-x: auto; }
+table.t { width: 100%; border-collapse: collapse; font-size: .84rem; }
+table.t th { text-align: left; font-family: var(--f-mono); font-weight: 500; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.t td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.t tr.click { cursor: pointer; } table.t tr.click:hover td { background: var(--surface-2); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--c); margin-right: 6px; vertical-align: -1px; }
+.bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; min-width: 80px; }
+.bar i { display: block; height: 100%; background: var(--c, var(--accent)); }
+footer { border-top: 1px solid var(--line); margin-top: 28px; padding-block: 16px 28px; color: var(--muted); font-size: .8rem; }
+footer .wrap { display: grid; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<header class="masthead">
+  <div class="stripe"></div>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Cartographie opérationnelle · 37ᵉ édition · Fédération burkinabè de cyclisme</div>
+      <h1>Tour du Faso 2026 <span>30 octobre – 8 novembre</span></h1>
+    </div>
+    <div class="mh-right">
+      <span class="classif">Usage planification sécurité</span>
+      <button class="btn" id="theme-btn" type="button">Thème</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="kpis" id="kpis"></div>
+  <div class="days" id="days" role="group" aria-label="Jours de l'épreuve"></div>
+
+  <section class="block" aria-labelledby="map-h">
+    <div class="sec-head"><h2 id="map-h">Carte des linéaires</h2><p>Choisissez un jour dans la frise ou cliquez une étape. « Lecture » anime le peloton étape par étape, transferts compris.</p></div>
+    <div class="mapgrid">
+      <div class="mapbox">
+        <div id="map" aria-label="Carte des étapes"></div>
+        <div class="mapctl">
+          <div class="panel" id="layers" role="group" aria-label="Couches" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+          <div class="panel seg" role="group" aria-label="Largeur du corridor"><span class="eyebrow">Corridor</span>
+            <button class="ltog" data-w="0" aria-pressed="false">aucun</button><button class="ltog" data-w="5" aria-pressed="false">5 km</button><button class="ltog" data-w="10" aria-pressed="true">10 km</button><button class="ltog" data-w="20" aria-pressed="false">20 km</button></div>
+        </div>
+        <div class="bigday" id="bigday" hidden><b></b><span></span></div>
+        <div class="legend panel" id="legend"></div>
+        <div class="attrib">Fonds : geoBoundaries (CC BY 4.0) · Natural Earth</div>
+        <div class="playbar panel"><button class="btn primary" id="play" type="button">▶ Lecture</button><button class="btn" id="all" type="button">Vue d’ensemble</button></div>
+      </div>
+      <aside class="side" id="side" aria-live="polite"><div class="side-head" id="side-head"></div><div class="side-body" id="side-body"></div></aside>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="exp-h">
+    <div class="sec-head"><h2 id="exp-h">Analyse d’exposition</h2><p>Superposez vos propres incidents ou points d’intérêt. Le décompte par étape suit la largeur de corridor choisie sur la carte.</p></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Importer des incidents</h3>
+        <p class="sub">Fichier CSV (colonnes <code>lat</code>, <code>lon</code>, puis facultatives <code>date</code>, <code>type</code>, <code>description</code>) ou GeoJSON de points. Le traitement reste dans votre navigateur.</p>
+        <div class="drop" id="drop">Glissez un fichier ici ou <label class="btn" for="file" style="display:inline-block">choisir un fichier</label><input id="file" type="file" accept=".csv,.txt,.json,.geojson" hidden></div>
+        <label class="eyebrow" for="paste">Ou collez des lignes CSV</label>
+        <textarea id="paste" placeholder="lat;lon;date;type;description&#10;11.18;-1.14;2026-10-12;Attaque;Exemple de saisie (Pô)"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="paste-go" type="button">Superposer</button><button class="btn" id="clear-inc" type="button">Effacer les incidents</button><span id="inc-status" class="sub" style="align-self:center"></span></div>
+      </div>
+      <div class="card">
+        <h3>Incidents dans le corridor, par étape</h3>
+        <p class="sub" id="exp-sub">Aucun incident importé. Le tableau donne la proximité des frontières et les transferts.</p>
+        <div class="tablewrap"><table class="t" id="exp"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="km-h">
+    <div class="sec-head"><h2 id="km-h">Kilométrage et logistique</h2><p>Les distances officielles proviennent du document de parcours de la FBC. Les longueurs des tracés sont celles de la reconstitution.</p></div>
+    <div class="grid2">
+      <div class="card"><h3>Course et transferts par jour</h3><p class="sub">Kilomètres de course, transferts avant le départ et après l’arrivée</p><div class="chart" id="c-km"></div></div>
+      <div class="card"><h3>Distance officielle et tracé reconstitué</h3><p class="sub">Un écart important signale des détours ou boucles urbaines à confirmer dans le roadbook</p><div class="chart" id="c-ecart"></div></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="tab-h">
+    <div class="sec-head"><h2 id="tab-h">Tableau des étapes</h2></div>
+    <div class="card tablewrap"><table class="t" id="stages"></table></div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <p><b>Source.</b> Fédération burkinabè de cyclisme, « Parcours – 37ᵉ édition du Tour du Faso, du 30 octobre au 8 novembre 2026 ». Les totaux du document ont été vérifiés : 1 399,97 km de course, 72 km de transferts avant départ et 916 km après arrivée, soit 2 387,97 km.</p>
+  <p><b>Tracés.</b> Ils sont reconstitués sur le réseau routier Natural Earth par plus court chemin entre villes-étapes. Ils ne remplacent pas le roadbook officiel : boucles urbaines, déviations et circuits finaux n’y figurent pas. « Axe confirmé » signifie un écart de 8 % au plus avec la distance officielle. « Tracé indicatif » signifie qu’au moins un tronçon est tracé en ligne droite, faute de réseau. Les circuits sont représentés par une boucle schématique de même longueur. La position de Pa, Saponé et Dapélogo est approximative.</p>
+  <p><b>Régions.</b> Les limites sont celles de geoBoundaries, renommées selon la réforme de 2025 : Centre → Kadiogo, Centre-Nord → Koulsé, Centre-Ouest → Nando, Boucle du Mouhoun → Bankui, Hauts-Bassins → Guiriko, Centre-Est → Nakanbé, Centre-Sud → Nazinon, Plateau-Central → Oubri. Les 8 régions traversées concordent avec le document de la FBC.</p>
+</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<script src="https://unpkg.com/deck.gl@9.0.38/dist.min.js"></script>
+<script>
+const DATA = /*__DATA__*/null;
+(() => {
+"use strict";
+const S = DATA.stages, B = DATA.basemap, OFF = DATA.official;
+const COLORS = ["#e8590c", "#d6336c", "#ae3ec9", "#7048e8", "#1c7ed6", "#0c8599", "#2b8a3e", "#82a700", "#e0a100", "#c92a2a"];
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (n, d = 0) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const rgb = (h, a = 255) => { h = h.replace("#", ""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), a]; };
+let T = {};
+const readTokens = () => { const cs = getComputedStyle(document.documentElement); ["--bg", "--surface", "--surface-2", "--ink", "--muted", "--line", "--accent", "--warn", "--crit", "--ok", "--gold", "--map-bg", "--land", "--bfa", "--border", "--adm", "--road", "--river", "--transfer"].forEach(n => T[n] = cs.getPropertyValue(n).trim()); };
+const isDark = () => rgb(T["--bg"])[0] < 80;
+const DAYS = [{ d: "2026-10-29", label: "Jeu. 29 oct.", stage: null }].concat(S.map(s => ({ d: s.date, label: new Date(s.date + "T00:00:00Z").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }), stage: s.n })));
+const QUAL = { "Axe confirmé": "--ok", "Axe probable, détours non documentés": "--gold", "Tracé indicatif": "--warn", "Circuit schématique": "--muted" };
+const view = { stage: null, width: 10, layers: { regions: true, provinces: false, roads: true, rivers: true, transfers: true, labels: true }, incidents: [], playing: null, trip: null };
+
+/* ---------- KPI ---------- */
+function renderKPIs() {
+  const course = S.reduce((a, s) => a + s.km, 0);
+  const tb = S.reduce((a, s) => a + (s.t_before ? s.t_before.km : 0), 0), ta = S.reduce((a, s) => a + (s.t_after ? s.t_after.km : 0), 0);
+  const regs = new Set(S.flatMap(s => s.regions));
+  const near = [...S].sort((a, b) => a.border_km - b.border_km)[0];
+  const ouaga = DATA.nights["Ouagadougou"] || 0, totN = Object.values(DATA.nights).reduce((a, b) => a + b, 0);
+  const chk = (a, b) => Math.abs(a - b) < .01 ? `<span class="ok">✓ conforme au document</span>` : `<span style="color:var(--crit)">≠ document (${fmt(b, 2)})</span>`;
+  const tiles = [
+    ["Étapes", "10", "dont 2 avec circuit urbain"],
+    ["Distance de course", `${fmt(course, 2)}<small> km</small>`, chk(course, OFF.course)],
+    ["Transferts", `${fmt(tb + ta)}<small> km</small>`, `${tb} km avant · ${ta} km après ${chk(tb + ta, OFF.transfert)}`],
+    ["Distance totale", `${fmt(course + tb + ta, 2)}<small> km</small>`, chk(course + tb + ta, OFF.total)],
+    ["Régions traversées", regs.size, [...regs].join(" · ")],
+    ["Nuitées", totN, `dont ${ouaga} à Ouagadougou`],
+    ["Frontière la plus proche", `${near.border_km}<small> km</small>`, `Étape ${near.n} ${esc(near.start)} – ${esc(near.end)} · ${esc(near.border)}`],
+  ];
+  $("#kpis").innerHTML = tiles.map(([l, v, d]) => `<div class="kpi"><span class="eyebrow">${l}</span><span class="v">${v}</span><span class="d">${d}</span></div>`).join("");
+}
+
+/* ---------- Frise ---------- */
+function renderDays() {
+  $("#days").innerHTML = DAYS.map(d => {
+    const s = d.stage ? S[d.stage - 1] : null;
+    const c = s ? COLORS[s.n - 1] : "var(--muted)";
+    return `<button type="button" class="day" data-n="${d.stage ?? 0}" aria-pressed="${view.stage === d.stage}" style="--c:${c}"><small>${esc(d.label)}</small><b>${s ? "Étape " + s.n : "J-1"}</b><small>${s ? esc(s.start === s.end ? s.start + " (circuit)" : s.start + " – " + s.end) : "Accueil, réunion technique"}</small></button>`;
+  }).join("");
+  $("#days").onclick = e => { const b = e.target.closest(".day"); if (!b) return; stopPlay(); selectStage(+b.dataset.n || null); };
+}
+
+/* ---------- Carte ---------- */
+let deckgl = null, viewState = null;
+const lonlat = n => { const t = DATA.towns.find(t => t.name === n); return [t.lon, t.lat]; };
+const geomOf = s => s.coords.length ? s.coords : s.loop;
+function bounds(coords) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  coords.forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
+  return [[x0, y0], [x1, y1]];
+}
+function fit(coords, pad = 70) {
+  if (!deckgl) return;
+  const el = $("#map"), vp = new deck.WebMercatorViewport({ width: el.clientWidth, height: el.clientHeight });
+  const wide = el.clientWidth > 700, side = wide ? pad : 30;
+  const f = vp.fitBounds(bounds(coords), { padding: { top: side + 50, bottom: side + 40, left: wide ? Math.max(side, 250) : side, right: side + 50 } });
+  viewState = { longitude: f.longitude, latitude: f.latitude, zoom: Math.min(f.zoom, 10.5), pitch: 0, bearing: 0, transitionDuration: 1100, transitionInterpolator: new deck.FlyToInterpolator() };
+  deckgl.setProps({ viewState });
+}
+const ALL = () => S.flatMap(s => geomOf(s));
+function cumul(coords) { const out = [0]; for (let i = 1; i < coords.length; i++) { const [a, b] = [coords[i - 1], coords[i]]; out.push(out[i - 1] + Math.hypot((b[0] - a[0]) * 108.9, (b[1] - a[1]) * 110.6)); } return out; }
+
+function layers() {
+  const dark = isDark(), L = view.layers, sel = view.stage;
+  const alpha = s => sel === null || sel === s.n ? 255 : 55;
+  const ls = [
+    new deck.GeoJsonLayer({ id: "countries", data: B.countries, filled: true, stroked: true, getFillColor: f => f.properties.iso === "BFA" ? rgb(T["--bfa"]) : rgb(T["--land"]), getLineColor: rgb(T["--border"], 210), getLineWidth: f => f.properties.iso === "BFA" ? 2 : 1, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [dark], getLineColor: [dark] } }),
+  ];
+  const crossed = new Set(S.flatMap(s => s.regions));
+  if (L.regions) ls.push(new deck.GeoJsonLayer({ id: "regions", data: B.regions, filled: true, stroked: true, pickable: true,
+    getFillColor: f => crossed.has(f.properties.name) ? rgb(T["--accent"], dark ? 26 : 20) : [0, 0, 0, 0], getLineColor: rgb(T["--border"], 150), getLineWidth: 1.1, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [dark], getLineColor: [dark] } }));
+  if (L.provinces) ls.push(new deck.GeoJsonLayer({ id: "prov", data: B.provinces, filled: false, getLineColor: rgb(T["--adm"], 140), getLineWidth: .6, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+  if (L.rivers) ls.push(new deck.GeoJsonLayer({ id: "rivers", data: B.rivers, getLineColor: rgb(T["--river"], 170), getLineWidth: 1.2, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+  if (L.roads) ls.push(new deck.GeoJsonLayer({ id: "roads", data: B.roads, getLineColor: rgb(T["--road"], 150), getLineWidth: f => f.properties.major ? 1.4 : .7, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+  if (view.width) {
+    const cor = S.filter(s => sel === null || sel === s.n).map(s => ({ s, poly: s.corridors[view.width] }));
+    ls.push(new deck.PolygonLayer({ id: "corridor", data: cor, getPolygon: d => d.poly, filled: true, stroked: true, getFillColor: d => rgb(COLORS[d.s.n - 1], sel === null ? 22 : 40), getLineColor: d => rgb(COLORS[d.s.n - 1], 120), getLineWidth: 1, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [sel], getPolygon: [view.width] } }));
+  }
+  if (L.transfers) {
+    const tr = S.flatMap(s => [s.t_before, s.t_after].filter(Boolean).map(t => ({ ...t, n: s.n })));
+    ls.push(new deck.PathLayer({ id: "transfers", data: tr, pickable: true, getPath: d => d.coords, getColor: d => rgb(T["--transfer"], sel === null || sel === d.n ? 220 : 40), getWidth: 2, widthUnits: "pixels",
+      getDashArray: [5, 4], dashJustified: true, extensions: [new deck.PathStyleExtension({ dash: true })], updateTriggers: { getColor: [sel, dark] } }));
+  }
+  ls.push(new deck.PathLayer({ id: "stages-casing", data: S, getPath: geomOf, getColor: d => rgb(T["--surface"], alpha(d)), getWidth: d => sel === d.n ? 9 : 6.5, widthUnits: "pixels", jointRounded: true, capRounded: true, updateTriggers: { getColor: [sel, dark], getWidth: [sel] } }));
+  ls.push(new deck.PathLayer({ id: "stages", data: S, pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 90], getPath: geomOf, getColor: d => rgb(COLORS[d.n - 1], alpha(d)), getWidth: d => sel === d.n ? 6 : 4, widthUnits: "pixels", jointRounded: true, capRounded: true,
+    getDashArray: d => d.quality === "Tracé indicatif" ? [7, 3] : [0, 0], dashJustified: true, extensions: [new deck.PathStyleExtension({ dash: true })], updateTriggers: { getColor: [sel], getWidth: [sel] } }));
+  const loops = S.filter(s => s.loop && s.coords.length);
+  ls.push(new deck.PathLayer({ id: "loops", data: loops, pickable: true, getPath: d => d.loop, getColor: d => rgb(COLORS[d.n - 1], alpha(d)), getWidth: 3, widthUnits: "pixels", getDashArray: [2, 2], extensions: [new deck.PathStyleExtension({ dash: true })], updateTriggers: { getColor: [sel] } }));
+  if (view.trip) {
+    ls.push(new deck.TripsLayer({ id: "trip", data: [view.trip], getPath: d => d.path, getTimestamps: d => d.ts, getColor: d => rgb(d.color), widthMinPixels: 7, trailLength: 25, currentTime: view.trip.t, capRounded: true, jointRounded: true, fadeTrail: true }));
+    ls.push(new deck.ScatterplotLayer({ id: "peloton", data: [view.trip.pos], getPosition: d => d, getRadius: 8, radiusUnits: "pixels", getFillColor: rgb(T["--ink"]), stroked: true, getLineColor: rgb(T["--surface"]), getLineWidth: 3, lineWidthUnits: "pixels" }));
+  }
+  if (view.incidents.length) ls.push(new deck.ScatterplotLayer({ id: "inc", data: view.incidents, pickable: true, getPosition: d => [d.lon, d.lat], getRadius: 5.5, radiusUnits: "pixels",
+    getFillColor: d => rgb(d.inCorr ? T["--crit"] : T["--muted"], d.inCorr ? 235 : 150), stroked: true, getLineColor: rgb(T["--surface"]), getLineWidth: 1.2, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [view.width, sel, dark] } }));
+  // Départs / arrivées et villes-étapes
+  const marks = [];
+  S.forEach(s => { marks.push({ n: s.n, kind: "D", name: s.start, p: geomOf(s)[0] }); marks.push({ n: s.n, kind: "A", name: s.end, p: s.coords.length ? s.coords[s.coords.length - 1] : s.loop[0] }); });
+  ls.push(new deck.ScatterplotLayer({ id: "marks", data: marks, getPosition: d => d.p, getRadius: d => d.kind === "A" ? 6 : 4.5, radiusUnits: "pixels", getFillColor: d => d.kind === "A" ? rgb(COLORS[d.n - 1], alpha(d)) : rgb(T["--surface"], alpha(d)), stroked: true, getLineColor: d => rgb(COLORS[d.n - 1], alpha(d)), getLineWidth: 2.5, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [sel, dark], getLineColor: [sel] } }));
+  if (L.labels) {
+    const towns = DATA.towns.filter(t => !["Sapouy", "Zorgho"].includes(t.name));
+    const CH = [...new Set((towns.map(t => t.name).join("") + B.regions.features.map(f => f.properties.name.toUpperCase()).join("") + "0123456789*()–- ").split(""))];
+    ls.push(new deck.TextLayer({ id: "towns", data: towns, getPosition: d => [d.lon, d.lat], getText: d => d.name + (d.approx ? "*" : ""), getSize: d => d.name === "Ouagadougou" || d.name === "Bobo-Dioulasso" ? 13 : 11.5, getColor: rgb(T["--ink"]), fontFamily: "IBM Plex Sans, sans-serif", fontWeight: 600, getPixelOffset: [9, -8], getTextAnchor: "start", characterSet: CH, fontSettings: { sdf: true }, outlineWidth: 2.5, outlineColor: rgb(T["--surface"], 220), updateTriggers: { getColor: [dark], outlineColor: [dark] } }));
+    if (L.regions) ls.push(new deck.TextLayer({ id: "reg-lbl", data: B.regions.features.filter(f => crossed.has(f.properties.name)), getPosition: f => regionLabel(f), getText: f => f.properties.name.toUpperCase(), getSize: 11, getColor: rgb(T["--accent"], 190), fontFamily: "IBM Plex Mono, monospace", characterSet: CH, fontSettings: { sdf: true }, outlineWidth: 2, outlineColor: rgb(T["--bfa"], 200), updateTriggers: { getColor: [dark], outlineColor: [dark] } }));
+  }
+  return ls;
+}
+const regionLabel = f => f.properties.label; // point intérieur calculé à la génération
+function tooltip({ object, layer }) {
+  if (!object) return null;
+  if (layer.id === "stages" || layer.id === "loops") return { html: `<b>Étape ${object.n} · ${esc(object.start)} – ${esc(object.end)}</b><br>${esc(object.jour)} · ${fmt(object.km, 2)} km officiels<br><span style="opacity:.75">${esc(object.quality)}</span>` };
+  if (layer.id === "transfers") return { html: `<b>Transfert ${esc(object.from)} → ${esc(object.to)}</b><br>${object.km} km (étape ${object.n})` };
+  if (layer.id === "regions") return { html: `<b>${esc(object.properties.name)}</b><br><span style="opacity:.75">ex-${esc(object.properties.old)}</span>` };
+  if (layer.id === "inc") return { html: `<b>${esc(object.type || "Incident")}</b>${object.date ? " · " + esc(object.date) : ""}<br>${esc(object.description || "")}<br>${object.near ? `À ${fmt(object.near.d, 1)} km de l’étape ${object.near.n}` : ""}` };
+  return null;
+}
+function initMap() {
+  viewState = { longitude: -1.9, latitude: 12.0, zoom: 6.4, pitch: 0, bearing: 0 };
+  deckgl = new deck.Deck({ parent: $("#map"), views: new deck.MapView({ repeat: false }), viewState, controller: { minZoom: 5, maxZoom: 13 },
+    onViewStateChange: ({ viewState: vs }) => { viewState = vs; deckgl.setProps({ viewState }); },
+    getTooltip: tooltip, layers: layers(),
+    onClick: ({ object, layer }) => { if (object && layer && (layer.id === "stages" || layer.id === "loops")) { stopPlay(); selectStage(object.n); } } });
+  const lyr = [["regions", "Régions"], ["provinces", "Provinces"], ["roads", "Routes"], ["rivers", "Hydrographie"], ["transfers", "Transferts"], ["labels", "Toponymes"]];
+  $("#layers").innerHTML = lyr.map(([k, l]) => `<button type="button" class="ltog" data-k="${k}" aria-pressed="${view.layers[k]}">${l}</button>`).join("");
+  $("#layers").onclick = e => { const b = e.target.closest(".ltog"); if (!b) return; view.layers[b.dataset.k] = !view.layers[b.dataset.k]; b.setAttribute("aria-pressed", view.layers[b.dataset.k]); redraw(); };
+  document.querySelectorAll("[data-w]").forEach(b => b.onclick = () => { view.width = +b.dataset.w; document.querySelectorAll("[data-w]").forEach(x => x.setAttribute("aria-pressed", x === b)); computeExposure(); redraw(); renderExposure(); renderSide(); });
+  setTimeout(() => fit(ALL(), 40), 50);
+}
+function redraw() { if (deckgl) deckgl.setProps({ layers: layers() }); }
+function renderLegend() {
+  $("#legend").innerHTML = `<span class="eyebrow">Étapes</span>` + S.map(s => `<div class="row"><i style="--c:${COLORS[s.n - 1]}"></i>${s.n}. ${esc(s.start === s.end ? s.start + " (circuit)" : s.start + " – " + s.end)}</div>`).join("") +
+    `<div class="row"><i class="dash"></i>Transfert</div><div class="row" style="color:var(--muted)">Trait discontinu : tracé indicatif · * position approchée</div>` +
+    (view.incidents.length ? `<div class="row"><i class="dot" style="--c:var(--crit)"></i>Incident dans le corridor</div>` : "");
+}
+
+/* ---------- Fiche d'étape ---------- */
+function watchpoints(s) {
+  const w = [];
+  if (s.border_km <= 30) w.push(`Tracé à ${s.border_km} km de la frontière (${esc(s.border)}) : coordination transfrontalière et surveillance des axes de repli.`);
+  if (s.circuit) w.push(`Circuit urbain de ${fmt(s.circuit.lap, 2)} km × ${s.circuit.laps} à ${esc(s.circuit.town)} : forte densité de public, passages répétés au même point.`);
+  if (s.t_after && s.t_after.km >= 150) w.push(`Transfert de ${s.t_after.km} km après l’arrivée (${esc(s.t_after.from)} → ${esc(s.t_after.to)}) : convoi en fin de journée, arrivée probable de nuit.`);
+  if (s.t_before) w.push(`Transfert de ${s.t_before.km} km avant le départ (${esc(s.t_before.from)} → ${esc(s.t_before.to)}) : horaires et itinéraire du convoi à sécuriser.`);
+  if (s.quality !== "Axe confirmé" && s.quality !== "Circuit schématique") w.push(`Tracé exact à confirmer avec le roadbook FBC (écart de ${s.ecart > 0 ? "+" : ""}${s.ecart} % avec la distance officielle).`);
+  w.push(`Exposition sur route estimée à ${fmt(s.duration_h, 1)} h (moyenne de 40 km/h).`);
+  return w;
+}
+function renderSide() {
+  const head = $("#side-head"), body = $("#side-body");
+  const s = view.stage ? S[view.stage - 1] : null;
+  if (!s) {
+    head.style.setProperty("--c", "var(--accent)");
+    head.innerHTML = `<span class="eyebrow">Jeudi 29 octobre 2026</span><h3>Vue d’ensemble</h3>`;
+    const nights = Object.entries(DATA.nights).sort((a, b) => b[1] - a[1]);
+    body.innerHTML = `<p>Enregistrement des équipes et réunion technique à Ouagadougou. La capitale est le pivot logistique : ${DATA.nights["Ouagadougou"]} nuitées sur ${Object.values(DATA.nights).reduce((a, b) => a + b, 0)}, et 6 étapes y partent ou y arrivent, transferts compris.</p>
+      <div><span class="eyebrow">Nuitées par ville</span><div style="display:grid;gap:6px;margin-top:6px">${nights.map(([v, n]) => `<div style="display:grid;grid-template-columns:120px 1fr 24px;gap:8px;align-items:center"><span>${esc(v)}</span><span class="bar"><i style="width:${100 * n / nights[0][1]}%"></i></span><b class="num">${n}</b></div>`).join("")}</div></div>
+      <div><span class="eyebrow">Étapes proches d’une frontière</span><ul class="watch" style="margin-top:6px">${[...S].sort((a, b) => a.border_km - b.border_km).slice(0, 3).map(x => `<li>Étape ${x.n} ${esc(x.start)} – ${esc(x.end)} : ${x.border_km} km (${esc(x.border)})</li>`).join("")}</ul></div>
+      <p class="sub" style="color:var(--muted)">Choisissez un jour dans la frise pour ouvrir la fiche de l’étape.</p>`;
+    return;
+  }
+  const c = COLORS[s.n - 1];
+  head.style.setProperty("--c", c);
+  head.innerHTML = `<span class="eyebrow">${esc(s.jour)} 2026</span><h3>Étape ${s.n} · ${esc(s.start === s.end ? s.start + " — circuit" : s.start + " – " + s.end)}</h3>`;
+  const inc = view.incidents.filter(i => i.inCorr && i.near && i.near.n === s.n).length;
+  body.innerHTML = `<div class="big3"><div><b>${fmt(s.km, 2)}</b><span>km officiels</span></div><div><b>${fmt(s.km_est, 1)}</b><span>km tracés</span></div><div><b style="color:${Math.abs(s.ecart) <= 8 ? "var(--ok)" : "var(--warn)"}">${s.ecart > 0 ? "+" : ""}${s.ecart} %</b><span>écart</span></div></div>
+    <div><span class="pill" style="color:var(${QUAL[s.quality]})">${esc(s.quality)}</span></div>
+    ${s.note ? `<p>${esc(s.note)}</p>` : ""}
+    <dl class="kv">
+      <dt>Axe suivi</dt><dd>${s.via.length ? s.via.map(esc).join(" → ") : esc(s.start) + " (boucle)"}</dd>
+      <dt>Régions</dt><dd>${s.regions.map(esc).join(", ")}</dd>
+      <dt>Frontière la plus proche</dt><dd>${s.border_km} km · ${esc(s.border)}</dd>
+      <dt>Transfert avant</dt><dd>${s.t_before ? `${esc(s.t_before.from)} → ${esc(s.t_before.to)} · ${s.t_before.km} km` : "—"}</dd>
+      <dt>Transfert après</dt><dd>${s.t_after ? `${esc(s.t_after.from)} → ${esc(s.t_after.to)} · ${s.t_after.km} km` : "—"}</dd>
+      <dt>Hébergement</dt><dd>${esc(s.hotel)}</dd>
+      <dt>Incidents (corridor ${view.width} km)</dt><dd>${view.incidents.length ? `<b style="color:${inc ? "var(--crit)" : "var(--ok)"}">${inc}</b>` : "aucun import"}</dd>
+    </dl>
+    <div><span class="eyebrow">Points d’attention pour la planification</span><ul class="watch" style="margin-top:6px">${watchpoints(s).map(x => `<li>${x}</li>`).join("")}</ul></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="prev" type="button" ${s.n === 1 ? "disabled" : ""}>◄ Étape précédente</button><button class="btn" id="next" type="button" ${s.n === 10 ? "disabled" : ""}>Étape suivante ►</button></div>`;
+  $("#prev").onclick = () => selectStage(s.n - 1);
+  $("#next").onclick = () => selectStage(s.n + 1);
+}
+function selectStage(n) {
+  view.stage = n; view.trip = null;
+  document.querySelectorAll(".day").forEach(b => b.setAttribute("aria-pressed", (+b.dataset.n || null) === n));
+  const bd = $("#bigday");
+  if (n) {
+    const s = S[n - 1];
+    bd.hidden = false; bd.querySelector("b").textContent = `Étape ${n}`; bd.querySelector("span").textContent = s.jour;
+    fit([...geomOf(s), ...(s.t_before ? s.t_before.coords : []), ...(s.t_after ? s.t_after.coords : []), ...(s.loop || [])]);
+  } else { bd.hidden = true; fit(ALL(), 40); }
+  try { history.replaceState(null, "", n ? "#etape-" + n : location.pathname + location.search); } catch (e) { /* facultatif */ }
+  redraw(); renderSide();
+}
+
+/* ---------- Lecture animée ---------- */
+function tripFor(s) {
+  const path = [...(s.t_before ? s.t_before.coords : []), ...s.coords, ...(s.loop || []), ...(s.t_after ? s.t_after.coords : [])];
+  const ts = cumul(path);
+  return { path, ts, color: COLORS[s.n - 1], t: 0, pos: path[0], total: ts[ts.length - 1] };
+}
+function startPlay() {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let n = view.stage && view.stage < 10 ? view.stage : 1;
+  $("#play").textContent = "❚❚ Pause";
+  const runStage = () => {
+    selectStage(n);
+    const trip = tripFor(S[n - 1]); view.trip = trip;
+    const speed = trip.total / (reduce ? 1.2 : 4.5); // km par seconde d'animation
+    let last = performance.now();
+    const tick = now => {
+      if (!view.playing) return;
+      trip.t = Math.min(trip.total, trip.t + speed * (now - last) / 1000); last = now;
+      let i = trip.ts.findIndex(x => x >= trip.t); if (i < 1) i = 1;
+      const [a, b] = [trip.path[i - 1], trip.path[i]], f = (trip.t - trip.ts[i - 1]) / Math.max(1e-6, trip.ts[i] - trip.ts[i - 1]);
+      trip.pos = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+      redraw();
+      if (trip.t < trip.total) view.playing = requestAnimationFrame(tick);
+      else if (n < 10) { n++; view.playing = setTimeout(() => { if (view.playing) runStage(); }, 700); }
+      else stopPlay();
+    };
+    view.playing = requestAnimationFrame(tick);
+  };
+  view.playing = true; runStage();
+}
+function stopPlay() { if (view.playing) { cancelAnimationFrame(view.playing); clearTimeout(view.playing); } view.playing = null; $("#play").textContent = "▶ Lecture"; }
+
+/* ---------- Exposition ---------- */
+function distToLine(p, coords) {
+  const kx = 108.9, ky = 110.6; let best = 1e9;
+  for (let i = 1; i < coords.length; i++) {
+    const ax = coords[i - 1][0] * kx, ay = coords[i - 1][1] * ky, bx = coords[i][0] * kx, by = coords[i][1] * ky, px = p[0] * kx, py = p[1] * ky;
+    const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy; let t = L2 ? ((px - ax) * dx + (py - ay) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+    best = Math.min(best, Math.hypot(px - ax - t * dx, py - ay - t * dy));
+  }
+  return best;
+}
+function computeExposure() {
+  view.incidents.forEach(i => {
+    let near = null;
+    S.forEach(s => { const d = Math.min(s.coords.length ? distToLine([i.lon, i.lat], s.coords) : 1e9, s.loop ? distToLine([i.lon, i.lat], s.loop) : 1e9); if (!near || d < near.d) near = { n: s.n, d }; });
+    i.near = near; i.perStage = S.map(s => Math.min(s.coords.length ? distToLine([i.lon, i.lat], s.coords) : 1e9, s.loop ? distToLine([i.lon, i.lat], s.loop) : 1e9));
+    i.inCorr = view.width > 0 && near.d <= view.width;
+  });
+}
+function renderExposure() {
+  const w = view.width, has = view.incidents.length;
+  $("#exp-sub").textContent = has ? `${view.incidents.length} incident(s) importé(s) · corridor de ${w || 0} km de part et d’autre du tracé.` : "Aucun incident importé. Le tableau donne la proximité des frontières et les transferts.";
+  const rows = S.map(s => {
+    const n = has && w ? view.incidents.filter(i => i.perStage[s.n - 1] <= w).length : null;
+    const n20 = has ? view.incidents.filter(i => i.perStage[s.n - 1] <= 20).length : null;
+    return { s, n, n20 };
+  });
+  const max = Math.max(1, ...rows.map(r => r.n || 0));
+  $("#exp").innerHTML = `<thead><tr><th>Étape</th><th>Date</th>${has ? `<th>Dans le corridor (${w} km)</th><th>≤ 20 km</th>` : ""}<th>Frontière</th><th>Transferts</th></tr></thead><tbody>` +
+    rows.map(({ s, n, n20 }) => `<tr class="click" data-n="${s.n}"><td><span class="sw" style="--c:${COLORS[s.n - 1]}"></span>${s.n}. ${esc(s.start === s.end ? s.start : s.start + " – " + s.end)}</td><td class="num">${s.date.slice(8)}/${s.date.slice(5, 7)}</td>
+      ${has ? `<td><div style="display:flex;gap:8px;align-items:center"><b class="num" style="width:2ch;color:${n ? "var(--crit)" : "var(--ok)"}">${n ?? "—"}</b><span class="bar" style="flex:1;--c:var(--crit)"><i style="width:${100 * (n || 0) / max}%"></i></span></div></td><td class="num">${n20}</td>` : ""}
+      <td class="num" style="color:${s.border_km <= 30 ? "var(--warn)" : "inherit"}">${s.border_km} km · ${esc(s.border)}</td><td class="num">${(s.t_before ? s.t_before.km : 0) + (s.t_after ? s.t_after.km : 0) || "—"}${s.t_before || s.t_after ? " km" : ""}</td></tr>`).join("") + "</tbody>";
+  $("#exp tbody").onclick = e => { const tr = e.target.closest("tr[data-n]"); if (tr) { selectStage(+tr.dataset.n); $("#map-h").scrollIntoView({ behavior: "smooth" }); } };
+}
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  const sep = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ";" : (lines[0].includes("\t") ? "\t" : ",");
+  let head = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/^"|"$/g, ""));
+  const isHead = head.some(h => /lat|lon|lng|x|y/.test(h) && isNaN(parseFloat(h)));
+  if (!isHead) head = ["lat", "lon", "date", "type", "description"];
+  const idx = k => head.findIndex(h => k.test(h));
+  const iLat = idx(/^(lat|latitude|y)$/), iLon = idx(/^(lon|lng|long|longitude|x)$/), iDate = idx(/date/), iType = idx(/type|typolog|cat/), iDesc = idx(/desc|detail|lieu|localit/);
+  return lines.slice(isHead ? 1 : 0).map(l => {
+    const c = l.split(sep).map(v => v.trim().replace(/^"|"$/g, ""));
+    const num = v => parseFloat(String(v).replace(",", "."));
+    return { lat: num(c[iLat >= 0 ? iLat : 0]), lon: num(c[iLon >= 0 ? iLon : 1]), date: iDate >= 0 ? c[iDate] : "", type: iType >= 0 ? c[iType] : "", description: iDesc >= 0 ? c[iDesc] : "" };
+  }).filter(p => isFinite(p.lat) && isFinite(p.lon) && Math.abs(p.lat) <= 90 && Math.abs(p.lon) <= 180);
+}
+function parseAny(text, name = "") {
+  const t = text.trim();
+  if (t.startsWith("{")) {
+    const g = JSON.parse(t);
+    return (g.features || []).filter(f => f.geometry && f.geometry.type === "Point").map(f => ({ lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], date: f.properties?.date || "", type: f.properties?.type || f.properties?.mode || f.properties?.typology || "", description: f.properties?.description || f.properties?.desc || f.properties?.place || "" }));
+  }
+  return parseCSV(t);
+}
+function loadIncidents(list, label) {
+  view.incidents = list; computeExposure();
+  $("#inc-status").textContent = list.length ? `${list.length} point(s) chargé(s)${label ? " depuis " + label : ""}.` : "Aucun point valide : vérifiez les colonnes lat et lon.";
+  try { localStorage.setItem("tdf-incidents", JSON.stringify(list.map(({ lat, lon, date, type, description }) => ({ lat, lon, date, type, description })))); } catch (e) { /* stockage facultatif */ }
+  redraw(); renderExposure(); renderSide(); renderLegend();
+}
+function initImport() {
+  const drop = $("#drop"), file = $("#file");
+  const read = f => { const r = new FileReader(); r.onload = () => { try { loadIncidents(parseAny(String(r.result), f.name), f.name); } catch (e) { $("#inc-status").textContent = "Fichier illisible : " + e.message; } }; r.readAsText(f); };
+  file.onchange = () => file.files[0] && read(file.files[0]);
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) read(f); });
+  $("#paste-go").onclick = () => { try { loadIncidents(parseAny($("#paste").value), "la saisie"); } catch (e) { $("#inc-status").textContent = "Saisie illisible : " + e.message; } };
+  $("#clear-inc").onclick = () => { try { localStorage.removeItem("tdf-incidents"); } catch (e) { /* facultatif */ } loadIncidents([], ""); $("#inc-status").textContent = ""; };
+  try { const saved = JSON.parse(localStorage.getItem("tdf-incidents") || "[]"); if (saved.length) loadIncidents(saved, "votre dernière session"); } catch (e) { /* facultatif */ }
+}
+
+/* ---------- Graphiques et tableau ---------- */
+const charts = {};
+function renderCharts() {
+  if (!window.echarts) return;
+  Object.values(charts).forEach(c => c.dispose());
+  const base = { textStyle: { fontFamily: "IBM Plex Sans, sans-serif", color: T["--ink"] }, tooltip: { trigger: "axis", backgroundColor: T["--surface"], borderColor: T["--line"], textStyle: { color: T["--ink"] } }, legend: { top: 0, left: 0, textStyle: { color: T["--muted"], fontSize: 11 }, icon: "circle", itemWidth: 10 }, grid: { left: 44, right: 16, top: 36, bottom: 40 } };
+  const cat = { type: "category", data: S.map(s => "É" + s.n), axisLabel: { color: T["--muted"] }, axisLine: { lineStyle: { color: T["--line"] } }, axisTick: { show: false } };
+  const val = n => ({ type: "value", name: n, nameTextStyle: { color: T["--muted"] }, axisLabel: { color: T["--muted"] }, splitLine: { lineStyle: { color: T["--line"] } } });
+  charts.km = echarts.init($("#c-km"));
+  charts.km.setOption({ ...base, xAxis: cat, yAxis: val("km"), series: [
+    { name: "Course", type: "bar", stack: "k", data: S.map(s => ({ value: s.km, itemStyle: { color: COLORS[s.n - 1] } })), barWidth: "56%" },
+    { name: "Transfert avant", type: "bar", stack: "k", itemStyle: { color: T["--muted"], opacity: .55 }, data: S.map(s => s.t_before ? s.t_before.km : 0) },
+    { name: "Transfert après", type: "bar", stack: "k", itemStyle: { color: T["--transfer"], opacity: .8 }, data: S.map(s => s.t_after ? s.t_after.km : 0) }] });
+  charts.ec = echarts.init($("#c-ecart"));
+  charts.ec.setOption({ ...base, xAxis: cat, yAxis: val("km"), series: [
+    { name: "Officiel FBC", type: "bar", itemStyle: { color: T["--accent"] }, data: S.map(s => s.km), barGap: "10%" },
+    { name: "Tracé reconstitué", type: "bar", itemStyle: { color: T["--gold"] }, data: S.map(s => s.km_est), label: { show: true, position: "top", color: T["--muted"], fontSize: 10, formatter: p => (S[p.dataIndex].ecart > 0 ? "+" : "") + S[p.dataIndex].ecart + "%" } }] });
+  [charts.km, charts.ec].forEach(c => c.on("click", p => selectStage(p.dataIndex + 1)));
+}
+function renderTable() {
+  $("#stages").innerHTML = `<thead><tr><th>Étape</th><th>Date</th><th>Départ – arrivée</th><th>Officiel</th><th>Tracé</th><th>Écart</th><th>Fiabilité du tracé</th><th>Régions</th><th>Transferts</th><th>Hébergement</th></tr></thead><tbody>` +
+    S.map(s => `<tr class="click" data-n="${s.n}"><td><span class="sw" style="--c:${COLORS[s.n - 1]}"></span><b>${s.n}</b></td><td>${esc(s.jour)}</td><td>${esc(s.start)} – ${esc(s.end)}${s.circuit ? `<br><span style="color:var(--muted)">circuit ${fmt(s.circuit.lap, 2)} km × ${s.circuit.laps}</span>` : ""}</td>
+      <td class="num">${fmt(s.km, 2)} km</td><td class="num">${fmt(s.km_est, 1)} km</td><td class="num" style="color:${Math.abs(s.ecart) <= 8 ? "var(--ok)" : "var(--warn)"}">${s.ecart > 0 ? "+" : ""}${s.ecart} %</td>
+      <td><span class="pill" style="color:var(${QUAL[s.quality]})">${esc(s.quality)}</span></td><td>${s.regions.map(esc).join(", ")}</td>
+      <td class="num">${s.t_before ? `avant ${s.t_before.km} km<br>` : ""}${s.t_after ? `après ${s.t_after.km} km` : ""}${!s.t_before && !s.t_after ? "—" : ""}</td><td>${esc(s.hotel)}</td></tr>`).join("") +
+    `<tr><td colspan="3"><b>Total</b></td><td class="num"><b>${fmt(S.reduce((a, s) => a + s.km, 0), 2)} km</b></td><td class="num">${fmt(S.reduce((a, s) => a + s.km_est, 0), 1)} km</td><td></td><td></td><td>8 régions</td><td class="num"><b>${fmt(OFF.transfert)} km</b></td><td></td></tr></tbody>`;
+  $("#stages tbody").onclick = e => { const tr = e.target.closest("tr[data-n]"); if (tr) { selectStage(+tr.dataset.n); $("#map-h").scrollIntoView({ behavior: "smooth" }); } };
+}
+
+function boot() {
+  readTokens(); renderKPIs(); renderDays(); renderLegend(); renderTable(); renderExposure();
+  if (window.deck) initMap(); else $("#map").innerHTML = `<p style="padding:20px;color:var(--muted)">Le moteur cartographique n’a pas pu être chargé. Vérifiez l’accès à unpkg.com.</p>`;
+  renderSide(); renderCharts(); initImport();
+  $("#play").onclick = () => view.playing ? stopPlay() : startPlay();
+  $("#all").onclick = () => { stopPlay(); selectStage(null); };
+  const fromHash = () => { const m = location.hash.match(/^#etape-(\d+)$/); if (m && +m[1] >= 1 && +m[1] <= 10 && +m[1] !== view.stage) selectStage(+m[1]); };
+  window.addEventListener("hashchange", fromHash); setTimeout(fromHash, 300);
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => Object.values(charts).forEach(c => c.resize()), 120); });
+  const retheme = () => { readTokens(); redraw(); renderCharts(); };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  $("#theme-btn").onclick = () => { document.documentElement.dataset.theme = isDark() ? "light" : "dark"; };
+}
+boot();
+})();
+</script>
