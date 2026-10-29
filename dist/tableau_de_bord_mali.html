@@ -565,7 +565,7 @@ function buildLayers() {
   }
   if (L.heat && pts.length) layers.push(new deck.HeatmapLayer({ id: "heat", data: pts, getPosition: d => [d.lon, d.lat], getWeight: d => 1 + Math.sqrt(d.killed), radiusPixels: 55, intensity: 1.2, threshold: .04,
     colorRange: [[79, 138, 60, 0], [209, 162, 15, 120], [226, 112, 28, 170], [200, 16, 46, 210], [140, 0, 30, 235], [90, 0, 20, 245]] }));
-  if (L.hex && pts.length) layers.push(new deck.HexagonLayer({ id: "hex", data: pts, getPosition: d => [d.lon, d.lat], radius: 30000, extruded: true, elevationScale: 2600, coverage: .88, pickable: true,
+  if (L.hex && pts.length) layers.push(new deck.HexagonLayer({ id: "hex", data: pts, getPosition: d => [d.lon, d.lat], radius: 30000, extruded: true, elevationScale: 1100, coverage: .88, pickable: true,
     getElevationWeight: d => 1 + Math.sqrt(d.killed), elevationAggregation: "SUM", getColorWeight: d => 1 + Math.sqrt(d.killed), colorAggregation: "SUM",
     colorRange: [[233, 196, 106], [240, 160, 60], [226, 112, 28], [214, 70, 40], [200, 16, 46], [140, 10, 40]], material: { ambient: .6, diffuse: .6, shininess: 20 },
     updateTriggers: { getElevationWeight: [pts.length] } }));
@@ -624,7 +624,7 @@ function initMap() {
   initTimeline();
   window.addEventListener("resize", () => deckgl.setProps({}));
 }
-function flyTo(vs, ms = 1200) { viewState = { ...vs, transitionDuration: ms, transitionInterpolator: new deck.FlyToInterpolator() }; deckgl.setProps({ viewState }); }
+function flyTo(vs, ms = 1200) { if (!deckgl) return; viewState = { ...vs, transitionDuration: ms, transitionInterpolator: new deck.FlyToInterpolator() }; deckgl.setProps({ viewState }); }
 function flyHome() { flyTo(HOME()); }
 function fitRegion() {
   if (state.region === "all") return flyHome();
@@ -689,7 +689,8 @@ function stopPlay(ended) {
 /* ---------- Panneau latéral ---------- */
 function select(id, fly = true) {
   view.selected = id; const d = INC.find(i => i.id === id);
-  if (fly && d) flyTo({ ...viewState, longitude: d.lon, latitude: d.lat, zoom: Math.max(viewState.zoom, 7) });
+  try { history.replaceState(null, "", "#" + id); } catch (e) { /* lien direct facultatif */ }
+  if (fly && d && deckgl) flyTo({ ...viewState, longitude: d.lon, latitude: d.lat, zoom: Math.max(viewState.zoom, 7) });
   updateMap(); renderSide();
 }
 function renderSide() {
@@ -893,7 +894,10 @@ function boot() {
   initFilters(); renderActorCards(); renderQuality();
   if (window.deck) initMap(); else $("#map").innerHTML = `<p style="padding:20px;color:var(--muted)">Le moteur cartographique n’a pas pu être chargé. Vérifiez l’accès à unpkg.com.</p>`;
   render();
-  $("#side-close").onclick = () => { view.selected = null; updateMap(); renderSide(); };
+  $("#side-close").onclick = () => { view.selected = null; try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* lien direct facultatif */ } updateMap(); renderSide(); };
+  // Lien direct vers un incident (#INC-2026-007), utilisé notamment par le classeur Excel.
+  const fromHash = () => { const h = decodeURIComponent(location.hash.slice(1)); if (h && h !== view.selected && INC.some(i => i.id === h)) { select(h); $("#map-h").scrollIntoView({ block: "start" }); } };
+  window.addEventListener("hashchange", fromHash); setTimeout(fromHash, 300);
   let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => Object.values(charts).forEach(c => c.resize()), 120); });
   const retheme = () => { readTokens(); Object.values(charts).forEach(c => c.dispose()); for (const k in charts) delete charts[k]; render(); };
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);

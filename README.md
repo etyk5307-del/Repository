@@ -17,11 +17,24 @@ Fonctions :
 - évaluation stratégique : jugements clés, scénarios, indicateurs d'alerte, recommandations, limites des données ;
 - registre des incidents, avec recherche et tri.
 
+## Classeur Excel
+
+`dist/Tableau_de_bord_Mali.xlsx` contient 13 onglets : accueil et indicateurs, cartes de situation,
+registre enrichi, synthèses par région (indice de menace), par acteur, par semaine (P1 / P2), par mode
+opératoire, pression sur Bamako, évaluation, qualité des sources, paramètres, mode d'emploi, dictionnaire.
+Toutes les synthèses sont des formules ; les hypothèses (période, rayon, poids de l'indice) sont dans PARAMETRES.
+
+Ouvrir la carte depuis Excel : liens « Dossier ↗ » (fiche de l'incident dans le tableau de bord en ligne),
+« OSM ↗ » et « Google ↗ » sur chaque incident. Les coordonnées sont converties à point décimal pour
+fonctionner dans un Excel en français. `dist/Pack_Observatoire_Mali.zip` regroupe le classeur, la page HTML,
+les couches KML (Google Earth) et GeoJSON (QGIS) et les cartes, à décompresser dans un même dossier.
+
 ## Régénérer après mise à jour de la base
 
 ```bash
 pip install -r requirements.txt
 python scripts/build_dashboard.py data/Base_Donnees_Securite_Mali_OpenMap_Dashboard.xlsx
+python scripts/build_excel.py data/Base_Donnees_Securite_Mali_OpenMap_Dashboard.xlsx
 ```
 
 La feuille `DATA_CARTOGRAPHIE` doit garder ses en-têtes de colonnes. Le script produit dans `dist/` :
@@ -31,6 +44,8 @@ La feuille `DATA_CARTOGRAPHIE` doit garder ses en-têtes de colonnes. Le script 
 | `tableau_de_bord_mali.html` | Tableau de bord autonome |
 | `artifact_mali.html` | Même page, au format fragment pour publication Artifact |
 | `incidents_mali.geojson` | Couche de points enrichie pour QGIS / uMap / OpenStreetMap |
+| `incidents_mali.kml` | Couche Google Earth / Google My Maps, un dossier par acteur |
+| `cartes/*.png` | Cartes de situation (vues du tableau de bord) |
 | `incidents_mali_enrichi.csv` | Table enrichie : région et cercle géocodés, mode normalisé, fiabilité, distance à Bamako |
 
 Le fond `data/geo/basemap.json` provient de geoBoundaries (CC BY 4.0) et de Natural Earth.

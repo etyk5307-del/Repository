@@ -205,9 +205,38 @@ def write_outputs(geo, incidents, d0, d1, split):
               "properties": {k: (", ".join(s["name"] for s in v) if k == "sources" else v) for k, v in i.items() if k not in ("lat", "lon")}}
              for i in incidents]
     (dist / "incidents_mali.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": feats}, ensure_ascii=False, indent=1), encoding="utf-8")
+    (dist / "incidents_mali.kml").write_text(kml(incidents), encoding="utf-8")
     flat = pd.DataFrame([{**i, "sources": ", ".join(s["name"] for s in i["sources"])} for i in incidents])
     flat.to_csv(dist / "incidents_mali_enrichi.csv", index=False, encoding="utf-8-sig")
     return meta
+
+
+# Couleurs KML (aabbggrr) alignées sur la légende du tableau de bord.
+KML_COLORS = {"JNIM": "ff264adc", "EI-Sahel": "ffd64f8a", "FLA": "ff129ad6", "FAMa / Africa Corps": "ffb56f2f", "Indéterminé / accident": "ff978a7d"}
+
+
+def kml(incidents):
+    """Couche KML pour Google Earth / Google My Maps : un dossier par acteur, une fiche par incident."""
+    from xml.sax.saxutils import escape as x
+
+    styles = "".join(
+        f'<Style id="s{k}"><IconStyle><color>{c}</color><scale>1.1</scale><Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle><LabelStyle><scale>0.7</scale></LabelStyle></Style>'
+        for k, c in enumerate(KML_COLORS.values()))
+    keys = list(KML_COLORS)
+    folders = []
+    for a in keys:
+        marks = []
+        for i in (i for i in incidents if i["actor"] == a):
+            desc = (f"<b>{x(i['date'])} · {x(i['region'])} / {x(i['cercle'])}</b><br/>{x(i['mode'])} — {x(i['typology'])}<br/>"
+                    f"Instigateur : {x(i['actor_raw'])} · Cible : {x(i['target_raw'])}<br/><br/>{x(i['desc'])}<br/><br/>"
+                    f"Tués : {i['killed']} (FDS {i['fama_k']}, Africa Corps {i['ac_k']}, groupes armés {i['ga_k']}, civils {i['civ_k']}) · Civils blessés : {i['civ_w']}<br/>"
+                    f"Capturés : {i['pow']} · Véhicules détruits / saisis : {i['veh_d']} / {i['veh_s']}<br/>Fiabilité : {x(i['reliability'])} · Sources : {x(', '.join(s['name'] for s in i['sources']))}")
+            marks.append(f"<Placemark><name>{x(i['id'])} · {x(i['place'])}</name><TimeStamp><when>{i['date']}</when></TimeStamp><styleUrl>#s{keys.index(a)}</styleUrl>"
+                         f"<description><![CDATA[{desc}]]></description><Point><coordinates>{i['lon']},{i['lat']},0</coordinates></Point></Placemark>")
+        if marks:
+            folders.append(f"<Folder><name>{x(a)} ({len(marks)})</name>{''.join(marks)}</Folder>")
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Incidents sécuritaires Mali</name>'
+            f"{styles}{''.join(folders)}</Document></kml>\n")
 
 
 def summary(incidents, meta):
