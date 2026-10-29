@@ -952,6 +952,28 @@ def sheet_help(wb):
         body(wd.cell(r, 5, d))
 
 
+def netlify_pack():
+    """Dossier prêt à glisser sur Netlify Drop : index.html + fichiers téléchargeables, non indexé."""
+    import shutil
+    import zipfile
+
+    dist = ROOT / "dist"
+    site = dist / "site_netlify"
+    shutil.rmtree(site, ignore_errors=True)
+    (site / "fichiers").mkdir(parents=True)
+    shutil.copy(dist / HTML_FILE, site / "index.html")
+    for fn in ("Tableau_de_bord_Mali.xlsx", "incidents_mali.kml", "incidents_mali.geojson", "incidents_mali_enrichi.csv"):
+        shutil.copy(dist / fn, site / "fichiers" / fn)
+    # Données sensibles : on demande aux moteurs de recherche de ne pas indexer le site.
+    (site / "_headers").write_text("/*\n  X-Robots-Tag: noindex, nofollow\n  Referrer-Policy: no-referrer\n", encoding="utf-8")
+    (site / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8")
+    with zipfile.ZipFile(dist / "Site_Netlify_Mali.zip", "w", zipfile.ZIP_DEFLATED) as z:
+        for f in site.rglob("*"):
+            if f.is_file():
+                z.write(f, f.relative_to(site))
+    print(dist / "Site_Netlify_Mali.zip")
+
+
 def main(xlsx):
     geo, incidents, d0, d1, split = build(xlsx)
     meta = {"start": d0.isoformat(), "end": d1.isoformat(), "split": split.isoformat(), "bamako": {"lat": 12.6392, "lon": -8.0029}}
@@ -986,6 +1008,7 @@ def main(xlsx):
     wb.calculation.fullCalcOnLoad = True  # Excel recalcule toutes les formules à l'ouverture
     wb.save(OUT)
     print(OUT)
+    netlify_pack()
 
 
 if __name__ == "__main__":

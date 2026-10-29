@@ -50,3 +50,9 @@ La feuille `DATA_CARTOGRAPHIE` doit garder ses en-têtes de colonnes. Le script 
 
 Le fond `data/geo/basemap.json` provient de geoBoundaries (CC BY 4.0) et de Natural Earth.
 Pour le reconstruire : `python scripts/prepare_geo.py <dossier_sources>` (voir l'en-tête du script).
+
+## Publier sur Netlify (lien public)
+
+`dist/Site_Netlify_Mali.zip` : décompresser, puis glisser le dossier sur https://app.netlify.com/drop.
+Le site est marqué « noindex ». Pour que les liens « Dossier ↗ » du classeur pointent vers ce site,
+remplacer l'URL dans PARAMETRES (cellule « Tableau de bord en ligne »).
