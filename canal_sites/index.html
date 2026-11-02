@@ -1,0 +1,563 @@
+<title>Cartographie des points de vente</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Mise en page : poste de supervision — onglets pays, indicateurs, carte + fiche site, suivi sécuritaire, analyses, registre. */
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --surface-2: #f4f6f9; --ink: #121a26; --muted: #5a6577; --faint: #8a94a5; --line: #d8dee7;
+  --accent: #1f5fd1; --accent-ink: #ffffff; --ok: #2e7d4f; --warn: #c76a0a; --crit: #c8102e; --gold: #b88a00;
+  --map-bg: #d5dde6; --land: #e8e5dc; --focus: #f8f6f0; --border: #69768a; --adm: #a2acba; --road: #b69c70; --river: #4f8fc0;
+  --f-display: "Inter Tight", "Inter", "Segoe UI", system-ui, sans-serif; --f-body: "Inter", "Segoe UI", system-ui, sans-serif; --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b0f16; --surface: #121823; --surface-2: #19212f; --ink: #e4e9f1; --muted: #98a3b5; --faint: #687387; --line: #263043;
+  --accent: #5b93ff; --accent-ink: #07101f; --ok: #5cc28a; --warn: #ff9b3d; --crit: #ff5a6e; --gold: #e8c04d;
+  --map-bg: #070b11; --land: #161d27; --focus: #1f2836; --border: #8d9ab0; --adm: #46536a; --road: #85704d; --river: #3f86c4;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0b0f16; --surface: #121823; --surface-2: #19212f; --ink: #e4e9f1; --muted: #98a3b5; --faint: #687387; --line: #263043;
+  --accent: #5b93ff; --accent-ink: #07101f; --ok: #5cc28a; --warn: #ff9b3d; --crit: #ff5a6e; --gold: #e8c04d;
+  --map-bg: #070b11; --land: #161d27; --focus: #1f2836; --border: #8d9ab0; --adm: #46536a; --road: #85704d; --river: #3f86c4;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--surface); }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1600px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font-size: 1.4rem; } h3 { font-size: 1.04rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { border: 1px solid var(--line); background: var(--surface-2); padding: 6px 11px; border-radius: var(--radius); cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.masthead { background: var(--surface); border-bottom: 1px solid var(--line); }
+.masthead .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px 24px; padding-block: 18px 14px; }
+.masthead h1 { font-size: clamp(1.5rem, 3vw, 2.25rem); line-height: 1.08; font-weight: 800; }
+.masthead h1 span { color: var(--muted); font-weight: 600; }
+.mh-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip-int { font-family: var(--f-mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; padding: 4px 8px; border: 1px solid var(--warn); color: var(--warn); border-radius: 4px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
+.tab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; font-weight: 600; }
+.tab[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.tab .n { font-family: var(--f-mono); font-size: .74rem; opacity: .75; font-weight: 500; }
+.tab.empty .n::after { content: " · à charger"; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-top: 14px; }
+.kpi { background: var(--surface); padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
+.kpi .v { font-family: var(--f-display); font-size: 1.85rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: .85rem; color: var(--muted); font-weight: 600; }
+.kpi .d { font-size: .76rem; color: var(--muted); }
+@media (max-width: 700px) { .kpis .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+.filters { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
+.filters label { font-family: var(--f-mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.filters input, .filters select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; min-width: 0; }
+.filters .grow { flex: 1 1 220px; display: flex; gap: 8px; align-items: center; }
+.filters .grow input { flex: 1; }
+.count { margin-left: auto; font-family: var(--f-mono); font-size: .8rem; color: var(--muted); }
+.count b { color: var(--ink); font-size: 1rem; }
+section.block { margin-block: 22px; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.sec-head p { color: var(--muted); max-width: 74ch; }
+.mapgrid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 14px; margin-top: 14px; }
+@media (max-width: 1080px) { .mapgrid { grid-template-columns: minmax(0, 1fr); } }
+.mapbox { position: relative; height: 720px; max-height: 84vh; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--map-bg); }
+@media (max-width: 700px) { .mapbox { height: 560px; } .legend { display: none; } }
+#map { position: absolute; inset: 0; }
+.panel { background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 9px; }
+.mapctl { position: absolute; z-index: 5; top: 10px; left: 10px; right: 10px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.mapctl > * { pointer-events: auto; }
+.seg { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.ltog { border: 1px solid var(--line); background: var(--surface-2); border-radius: 5px; padding: 3px 8px; font-size: .76rem; cursor: pointer; }
+.ltog[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.legend { position: absolute; z-index: 5; left: 10px; bottom: 10px; font-size: .74rem; display: grid; gap: 3px; max-width: 250px; }
+.legend .row { display: flex; align-items: center; gap: 6px; }
+.legend .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); border: 1px solid var(--surface); flex: none; }
+.attrib { position: absolute; right: 8px; bottom: 6px; z-index: 4; font-size: .64rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 75%, transparent); padding: 1px 6px; border-radius: 4px; }
+.deck-tooltip { font-family: var(--f-body) !important; font-size: 12px !important; background: var(--surface) !important; color: var(--ink) !important; border: 1px solid var(--line); border-radius: 6px; max-width: 300px; padding: 8px 10px !important; }
+.side { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; min-width: 0; max-height: 720px; }
+.side-head { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.side-body { padding: 12px 14px; overflow-y: auto; display: grid; gap: 12px; align-content: start; }
+.kv { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 5px 10px; font-size: .86rem; margin: 0; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.pill { display: inline-block; font-family: var(--f-mono); font-size: .68rem; padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.bars { display: grid; gap: 6px; }
+.bars button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; text-align: left; border: 0; background: none; padding: 0; cursor: pointer; }
+.bars .b { grid-column: 1 / -1; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.bars .b i { display: block; height: 100%; background: var(--c, var(--accent)); }
+.links { display: flex; gap: 6px; flex-wrap: wrap; }
+.links a { font-size: .8rem; color: var(--accent); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 980px) { .grid2, .grid3 { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.card .sub { color: var(--muted); font-size: .84rem; }
+.chart { width: 100%; height: 280px; }
+.drop { border: 2px dashed var(--line); border-radius: var(--radius); padding: 14px; text-align: center; color: var(--muted); }
+.drop.over { border-color: var(--accent); background: var(--surface-2); }
+.tbl { max-height: 560px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table.t { width: 100%; border-collapse: collapse; font-size: .82rem; }
+table.t th { position: sticky; top: 0; background: var(--surface); text-align: left; font-family: var(--f-mono); font-weight: 500; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: pointer; }
+table.t th[aria-sort="ascending"]::after { content: " ▲"; } table.t th[aria-sort="descending"]::after { content: " ▼"; }
+table.t td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.t tr.click { cursor: pointer; } table.t tr.click:hover td { background: var(--surface-2); }
+.sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--c); margin-right: 6px; }
+footer { border-top: 1px solid var(--line); margin-top: 28px; padding-block: 16px 30px; color: var(--muted); font-size: .8rem; }
+footer .wrap { display: grid; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<header class="masthead"><div class="wrap">
+  <div>
+    <div class="eyebrow">Réseau de distribution · Points de vente agréés (PVA) · Supervision sécuritaire</div>
+    <h1>Cartographie des sites <span>Burkina Faso · Mali · Niger</span></h1>
+  </div>
+  <div class="mh-right"><span class="chip-int">Usage interne</span><span class="eyebrow" id="gen"></span><button class="btn" id="theme-btn" type="button">Thème</button></div>
+</div></header>
+
+<main class="wrap">
+  <div class="tabs" id="tabs" role="group" aria-label="Pays"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="filters" role="search">
+    <div class="grow"><label for="q">Rechercher</label><input id="q" type="search" placeholder="Nom, n° distributeur, ville, adresse…"></div>
+    <label for="f-zone">Zone</label><select id="f-zone"><option value="">Toutes</option></select>
+    <label for="f-reg">Région</label><select id="f-reg"><option value="">Toutes</option></select>
+    <label for="f-year">Activés depuis</label><select id="f-year"><option value="">Toujours</option></select>
+    <label for="f-qc">Géolocalisation</label><select id="f-qc"><option value="">Toutes</option><option value="ok">Fiable</option><option value="check">À vérifier ou corrigée</option></select>
+    <button class="btn" id="reset" type="button">Réinitialiser</button>
+    <span class="count" aria-live="polite"><b id="count">0</b> sites</span>
+  </div>
+
+  <div class="mapgrid">
+    <div class="mapbox">
+      <div id="map" aria-label="Carte des sites"></div>
+      <div class="mapctl">
+        <div class="panel seg" role="group" aria-label="Fond de carte"><span class="eyebrow">Fond</span><button class="ltog" data-base="vector" aria-pressed="false">Vectoriel</button><button class="ltog" data-base="plan" aria-pressed="true">Plan</button><button class="ltog" data-base="sat" aria-pressed="false">Satellite</button></div>
+        <div class="panel seg" id="layers" role="group" aria-label="Couches"></div>
+        <div class="panel seg" role="group" aria-label="Couleur des sites"><label class="eyebrow" for="color-by">Couleur</label><select id="color-by" style="background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:2px 6px;font-size:.78rem"><option value="zone">Zone commerciale</option><option value="qc">Qualité de géolocalisation</option><option value="age">Ancienneté</option><option value="exp">Exposition sécuritaire</option></select></div>
+      </div>
+      <div class="legend panel" id="legend"></div>
+      <div class="attrib" id="attrib"></div>
+    </div>
+    <aside class="side" aria-live="polite"><div class="side-head"><div id="side-title"></div><button class="btn" id="side-close" type="button" hidden>Fermer</button></div><div class="side-body" id="side-body"></div></aside>
+  </div>
+
+  <section class="block" aria-labelledby="sec-h">
+    <div class="sec-head"><h2 id="sec-h">Suivi sécuritaire des sites</h2><p>Superposez des incidents pour mesurer l’exposition de chaque site. Les sites qui ont un incident dans le rayon choisi passent en rouge sur la carte (couleur « Exposition sécuritaire »).</p></div>
+    <div class="grid3">
+      <div class="card">
+        <h3>Sources d’incidents</h3>
+        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="use-mali"> <span>Base incidents Mali (31/08–26/10/2026, <b id="n-mali">0</b> incidents)</span></label>
+        <div class="drop" id="drop">Glissez un fichier CSV, Excel ou GeoJSON<br>ou <label class="btn" for="file" style="display:inline-block;margin-top:6px">choisir un fichier</label><input id="file" type="file" accept=".csv,.txt,.xlsx,.xls,.json,.geojson" hidden></div>
+        <p class="sub">Colonnes attendues : <code>lat</code>, <code>lon</code> et, si possible, <code>date</code>, <code>type</code>, <code>description</code>. Le fichier reste dans votre navigateur.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" id="clear-inc" type="button">Retirer les incidents importés</button><span class="sub" id="inc-status"></span></div>
+        <div class="seg" role="group" aria-label="Rayon d’exposition"><span class="eyebrow">Rayon</span><button class="ltog" data-r="5" aria-pressed="false">5 km</button><button class="ltog" data-r="10" aria-pressed="true">10 km</button><button class="ltog" data-r="25" aria-pressed="false">25 km</button><button class="ltog" data-r="50" aria-pressed="false">50 km</button></div>
+      </div>
+      <div class="card"><h3>Exposition par région</h3><p class="sub" id="exp-sub"></p><div class="bars" id="exp-reg"></div></div>
+      <div class="card"><h3>Sites les plus exposés</h3><p class="sub">Classés par nombre d’incidents dans le rayon, puis par distance à l’incident le plus proche</p><div class="tbl" style="max-height:330px"><table class="t" id="exp-top"></table></div></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="ana-h">
+    <div class="sec-head"><h2 id="ana-h">Analyse du réseau</h2><p>Les graphiques suivent les filtres et l’onglet pays.</p></div>
+    <div class="grid3">
+      <div class="card"><h3>Sites par région</h3><p class="sub">Région calculée à partir des coordonnées</p><div class="chart" id="c-reg"></div></div>
+      <div class="card"><h3>Sites par zone commerciale</h3><p class="sub">Sectorisation de l’export</p><div class="chart" id="c-zone"></div></div>
+      <div class="card"><h3>Activations par année</h3><p class="sub">Date d’activation des sites actifs</p><div class="chart" id="c-year"></div></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="qc-h">
+    <div class="sec-head"><h2 id="qc-h">Contrôle de la géolocalisation</h2><p id="qc-intro"></p></div>
+    <div class="tbl" style="max-height:340px"><table class="t" id="qc"></table></div>
+  </section>
+
+  <section class="block" aria-labelledby="reg-h">
+    <div class="sec-head"><h2 id="reg-h">Registre des sites</h2><p>Cliquez une ligne pour centrer la carte sur le site.</p></div>
+    <div class="tbl"><table class="t" id="tbl"></table></div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <p><b>Données.</b> Export des points de vente agréés (statut actif). Les données de contact et les identifiants de connexion ne sont pas publiés sur cette page. Chaque site est rattaché à sa région et à sa province (cercle au Mali, département au Niger) par jointure spatiale de ses coordonnées WGS84. Burkina : régions issues de la réforme de 2025, sur les limites geoBoundaries.</p>
+  <p><b>Contrôles.</b> Les longitudes positives d’une zone Sud-Ouest ont été rendues négatives : le signe « − » manquait, et les points tombaient au Niger, au Bénin ou au Nigeria. Les sites partageant une position générique sont signalés « à géolocaliser ». La colonne « Géolocalisation » du registre indique la correction appliquée.</p>
+  <p><b>Fonds de carte.</b> Vectoriel : geoBoundaries (CC BY 4.0) et Natural Earth, disponible sans connexion aux serveurs de tuiles. Plan : © OpenStreetMap contributors, © CARTO. Satellite : Esri, Maxar, Earthstar Geographics.</p>
+</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<script src="https://unpkg.com/deck.gl@9.0.38/dist.min.js"></script>
+<script src="https://unpkg.com/supercluster@8.0.1/dist/supercluster.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const DATA = /*__DATA__*/null;
+(() => {
+"use strict";
+const SITES = DATA.sites, G = DATA.geo;
+SITES.forEach(s => { s.check = s.qc !== "OK"; });
+const ZONE_COLORS = ["#1f77b4", "#e8590c", "#2b8a3e", "#ae3ec9", "#d6336c", "#0c8599", "#b08900", "#5c7cfa", "#868e96"];
+const ZONES = [...new Set(SITES.map(s => s.zone || "Non renseignée"))].sort((a, b) => a.localeCompare(b, "fr"));
+const ZC = Object.fromEntries(ZONES.map((z, i) => [z, ZONE_COLORS[i % ZONE_COLORS.length]]));
+const QC_COLORS = { "OK": "--ok", "Coordonnées partagées": "--gold", "Corrigé": "--warn", "Corrigé, à confirmer": "--warn", "Position générique": "--crit", "Frontière, à vérifier": "--gold", "Hors pays déclaré": "--crit" };
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (n, d = 0) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const hexrgb = (h, a = 255) => { h = h.replace("#", ""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), a]; };
+let T = {};
+const readTokens = () => { const cs = getComputedStyle(document.documentElement); ["--bg", "--surface", "--surface-2", "--ink", "--muted", "--line", "--accent", "--ok", "--warn", "--crit", "--gold", "--map-bg", "--land", "--focus", "--border", "--adm", "--road", "--river"].forEach(n => T[n] = cs.getPropertyValue(n).trim()); };
+const isDark = () => hexrgb(T["--bg"])[0] < 80;
+const tok = (n, a) => hexrgb(T[n], a);
+const hav = (a, b, c, d) => { const r = Math.PI / 180, p1 = a * r, p2 = c * r; const h = Math.sin((p2 - p1) / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin((d - b) * r / 2) ** 2; return 2 * 6371 * Math.asin(Math.sqrt(h)); };
+
+const state = { iso: "", q: "", zone: "", reg: "", year: "", qc: "", selected: null, sort: { k: "nom", dir: 1 } };
+const view = { base: "plan", layers: { cluster: true, heat: false, regions: true, subs: false, roads: true, incidents: true, labels: true }, color: "zone", radius: 10, incImported: [], useMali: false };
+const BASES = {
+  plan: { light: "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png", dark: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png", attrib: "© OpenStreetMap contributors · © CARTO" },
+  sat: { light: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", dark: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attrib: "Imagerie © Esri, Maxar, Earthstar Geographics" },
+  vector: { attrib: "geoBoundaries (CC BY 4.0) · Natural Earth" },
+};
+
+/* ---------- Filtres ---------- */
+function filtered() {
+  const q = state.q.trim().toLowerCase();
+  return SITES.filter(s => (!state.iso || s.pays === isoName(state.iso)) && (!state.zone || (s.zone || "Non renseignée") === state.zone) && (!state.reg || s.region === state.reg) &&
+    (!state.year || (s.annee && s.annee >= +state.year)) && (!state.qc || (state.qc === "ok" ? !s.check : s.check)) &&
+    (!q || [s.id, s.nom, s.ville, s.adresse, s.province, s.region].join(" ").toLowerCase().includes(q)));
+}
+const isoName = iso => (DATA.countries.find(c => c.iso === iso) || {}).name;
+function initFilters() {
+  ZONES.forEach(z => $("#f-zone").insertAdjacentHTML("beforeend", `<option>${esc(z)}</option>`));
+  fillRegions();
+  [...new Set(SITES.map(s => s.annee).filter(Boolean))].sort().reverse().forEach(y => $("#f-year").insertAdjacentHTML("beforeend", `<option value="${y}">${y}</option>`));
+  $("#q").oninput = e => { state.q = e.target.value; render(); };
+  $("#f-zone").onchange = e => { state.zone = e.target.value; render(); };
+  $("#f-reg").onchange = e => { state.reg = e.target.value; render(); fitTo(filtered()); };
+  $("#f-year").onchange = e => { state.year = e.target.value; render(); };
+  $("#f-qc").onchange = e => { state.qc = e.target.value; render(); };
+  $("#reset").onclick = () => { Object.assign(state, { q: "", zone: "", reg: "", year: "", qc: "" }); ["#q", "#f-zone", "#f-reg", "#f-year", "#f-qc"].forEach(s => $(s).value = ""); render(); fitTo(filtered()); };
+}
+function fillRegions() {
+  const sel = $("#f-reg"), cur = state.reg;
+  const regs = [...new Set(SITES.filter(s => !state.iso || s.pays === isoName(state.iso)).map(s => s.region).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+  sel.innerHTML = `<option value="">Toutes</option>` + regs.map(r => `<option ${r === cur ? "selected" : ""}>${esc(r)}</option>`).join("");
+  if (!regs.includes(cur)) state.reg = "";
+}
+function renderTabs() {
+  const tabs = [{ iso: "", name: "Les 3 pays", n: SITES.length }].concat(DATA.countries);
+  $("#tabs").innerHTML = tabs.map(t => `<button type="button" class="tab ${t.n ? "" : "empty"}" data-iso="${t.iso}" aria-pressed="${state.iso === t.iso}">${esc(t.name)} <span class="n">${fmt(t.n)}</span></button>`).join("");
+  $("#tabs").onclick = e => {
+    const b = e.target.closest(".tab"); if (!b) return;
+    state.iso = b.dataset.iso; fillRegions(); renderTabs(); render();
+    const c = state.iso ? countryFeature(state.iso) : null;
+    if (c && !filtered().length) fitTo(null, c); else fitTo(filtered(), state.iso ? c : null);
+  };
+}
+const countryFeature = iso => G.countries.features.find(f => f.properties.iso === iso);
+
+/* ---------- Indicateurs ---------- */
+function renderKPIs(list) {
+  const regs = new Set(list.map(s => s.pays + s.region)), subs = new Set(list.map(s => s.pays + s.province));
+  const now = new Date(DATA.generated), y12 = new Date(now); y12.setFullYear(now.getFullYear() - 1);
+  const recent = list.filter(s => s.activation && new Date(s.activation) >= y12).length;
+  const nn = list.map(s => s.voisin_km).filter(x => x != null).sort((a, b) => a - b);
+  const corr = list.filter(s => s.qc.startsWith("Corrigé")).length, chk = list.filter(s => ["Position générique", "Hors pays déclaré", "Frontière, à vérifier", "Corrigé, à confirmer", "Coordonnées partagées"].includes(s.qc)).length;
+  const exp = view.exposure ? list.filter(s => view.exposure[s.id] && view.exposure[s.id].n > 0).length : null;
+  const byCountry = DATA.countries.map(c => `${c.name.split(" ")[0]} ${fmt(list.filter(s => s.pays === c.name).length)}`).join(" · ");
+  const tiles = [
+    ["Sites actifs", fmt(list.length), byCountry],
+    ["Régions couvertes", regs.size, `${subs.size} provinces, cercles ou départements`],
+    ["Activés sur 12 mois", fmt(recent), list.length ? `${Math.round(100 * recent / list.length)} % du réseau affiché` : "—"],
+    ["Distance au site voisin", nn.length ? `${fmt(nn[Math.floor(nn.length / 2)], 1)}<small> km</small>` : "—", "médiane, densité du maillage"],
+    ["Coordonnées corrigées", fmt(corr), "signe de longitude ou chiffre déplacé"],
+    ["Positions à vérifier", fmt(chk), "génériques, partagées ou à confirmer"],
+    ["Sites exposés", exp === null ? "—" : fmt(exp), exp === null ? "importez des incidents" : `incident à ≤ ${view.radius} km`],
+  ];
+  $("#kpis").innerHTML = tiles.map(([l, v, d]) => `<div class="kpi"><span class="eyebrow">${l}</span><span class="v">${v}</span><span class="d">${d}</span></div>`).join("");
+  $("#count").textContent = fmt(list.length);
+}
+
+/* ---------- Carte ---------- */
+let deckgl = null, viewState = { longitude: -1.6, latitude: 13.6, zoom: 5, pitch: 0, bearing: 0 }, cluster = null, clusterList = null;
+function siteColor(s) {
+  if (view.color === "qc") return tok(QC_COLORS[s.qc] || "--muted", 235);
+  if (view.color === "age") { const y = s.annee || 2019; const t = Math.max(0, Math.min(1, (y - 2019) / 7)); return [Math.round(40 + 160 * (1 - t)), Math.round(120 + 80 * t), Math.round(220 - 120 * t), 235]; }
+  if (view.color === "exp") { const e = view.exposure && view.exposure[s.id]; if (!e) return tok("--muted", 200); return e.n > 0 ? tok("--crit", 240) : e.d <= view.radius * 2 ? tok("--warn", 230) : tok("--ok", 220); }
+  return hexrgb(ZC[s.zone || "Non renseignée"], 235);
+}
+function buildCluster(list) {
+  if (!window.Supercluster) { cluster = null; return; }
+  cluster = new Supercluster({ radius: 56, maxZoom: 13 });
+  cluster.load(list.map(s => ({ type: "Feature", properties: { s }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })));
+  clusterList = list;
+}
+function clusters() {
+  const z = Math.round(viewState.zoom);
+  return cluster ? cluster.getClusters([-180, -85, 180, 85], Math.max(0, Math.min(16, z))) : [];
+}
+function tilesLayer() {
+  if (view.base === "vector") return null;
+  const url = BASES[view.base][isDark() ? "dark" : "light"];
+  return new deck.TileLayer({ id: "tiles-" + view.base + (isDark() ? "-d" : "-l"), data: url, minZoom: 0, maxZoom: 19, tileSize: 256, maxRequests: 12,
+    onTileError: () => { view.tileErrors = (view.tileErrors || 0) + 1; if (view.tileErrors > 6 && view.base !== "vector") { setBase("vector"); $("#attrib").textContent = "Fond en ligne indisponible : fond vectoriel embarqué · " + BASES.vector.attrib; } },
+    renderSubLayers: p => { const [[w, s], [e, n]] = p.tile.boundingBox; return new deck.BitmapLayer(p, { data: null, image: p.data, bounds: [w, s, e, n] }); } });
+}
+function layers() {
+  const list = view.list || filtered(), dark = isDark(), L = view.layers, online = view.base !== "vector";
+  const counts = {}; list.forEach(s => counts[s.pays + "|" + s.region] = (counts[s.pays + "|" + s.region] || 0) + 1);
+  const max = Math.max(1, ...Object.values(counts));
+  const isoOf = { BFA: "Burkina Faso", MLI: "Mali", NER: "Niger" };
+  const ls = [];
+  if (!online) ls.push(new deck.GeoJsonLayer({ id: "countries", data: G.countries, filled: true, stroked: true, getFillColor: f => ["BFA", "MLI", "NER"].includes(f.properties.iso) ? tok("--focus") : tok("--land"), getLineColor: tok("--border", 200), getLineWidth: 1, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [dark], getLineColor: [dark] } }));
+  const tl = tilesLayer(); if (tl) ls.push(tl);
+  if (L.regions) ls.push(new deck.GeoJsonLayer({ id: "regions", data: G.regions, pickable: true, filled: true, stroked: true,
+    getFillColor: f => { const n = counts[isoOf[f.properties.iso] + "|" + f.properties.name] || 0; return n ? [...tok("--accent").slice(0, 3), Math.round((online ? 25 : 18) + 90 * Math.sqrt(n / max))] : [0, 0, 0, 0]; },
+    getLineColor: tok(online ? "--ink" : "--border", online ? 120 : 170), getLineWidth: 1.2, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [list.length, state.iso, state.zone, state.reg, state.year, state.qc, state.q, dark, online], getLineColor: [dark, online] } }));
+  if (L.subs) ls.push(new deck.GeoJsonLayer({ id: "subs", data: G.subs, filled: false, getLineColor: tok("--adm", 150), getLineWidth: .6, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+  if (!online && L.roads) {
+    ls.push(new deck.GeoJsonLayer({ id: "rivers", data: G.rivers, getLineColor: tok("--river", 150), getLineWidth: 1, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+    ls.push(new deck.GeoJsonLayer({ id: "roads", data: G.roads, getLineColor: tok("--road", 150), getLineWidth: f => f.properties.major ? 1.3 : .7, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+  }
+  ls.push(new deck.GeoJsonLayer({ id: "borders", data: { type: "FeatureCollection", features: G.countries.features.filter(f => ["BFA", "MLI", "NER"].includes(f.properties.iso)) }, filled: false, getLineColor: online ? [255, 255, 255, 230] : tok("--ink", 160), getLineWidth: 2.2, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark, online] } }));
+  if (L.heat && list.length) ls.push(new deck.HeatmapLayer({ id: "heat", data: list, getPosition: s => [s.lon, s.lat], radiusPixels: 40, intensity: 1, threshold: .05, colorRange: [[31, 95, 209, 0], [31, 95, 209, 110], [91, 147, 255, 160], [255, 196, 61, 200], [255, 120, 50, 225], [200, 16, 46, 240]] }));
+  const inc = incidents();
+  if (L.incidents && inc.length) {
+    if (view.color === "exp") ls.push(new deck.ScatterplotLayer({ id: "inc-r", data: inc, getPosition: d => [d.lon, d.lat], getRadius: view.radius * 1000, radiusUnits: "meters", filled: true, stroked: true, getFillColor: tok("--crit", 22), getLineColor: tok("--crit", 90), getLineWidth: 1, lineWidthUnits: "pixels", updateTriggers: { getRadius: [view.radius], getFillColor: [dark] } }));
+    ls.push(new deck.ScatterplotLayer({ id: "inc", data: inc, pickable: true, getPosition: d => [d.lon, d.lat], getRadius: 6, radiusUnits: "pixels", getFillColor: tok("--crit", 240), stroked: true, getLineColor: [255, 255, 255, 230], getLineWidth: 1.5, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [dark] } }));
+    ls.push(new deck.TextLayer({ id: "inc-x", data: inc, getPosition: d => [d.lon, d.lat], getText: () => "✕", getSize: 9, getColor: [255, 255, 255, 255], fontWeight: 700, characterSet: ["✕"] }));
+  }
+  if (L.cluster && cluster && clusterList === list) {
+    const cl = clusters(), groups = cl.filter(c => c.properties.cluster), singles = cl.filter(c => !c.properties.cluster).map(c => c.properties.s);
+    ls.push(new deck.ScatterplotLayer({ id: "cl", data: groups, pickable: true, getPosition: c => c.geometry.coordinates, getRadius: c => 9 + 4.2 * Math.log2(c.properties.point_count), radiusUnits: "pixels", getFillColor: tok("--accent", 215), stroked: true, getLineColor: [255, 255, 255, 220], getLineWidth: 2.5, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [dark] } }));
+    ls.push(new deck.TextLayer({ id: "cl-n", data: groups, getPosition: c => c.geometry.coordinates, getText: c => String(c.properties.point_count), getSize: 12, getColor: [255, 255, 255, 255], fontFamily: "Inter, sans-serif", fontWeight: 700, characterSet: "0123456789" }));
+    ls.push(pointsLayer(singles));
+  } else ls.push(pointsLayer(list));
+  if (state.selected) { const s = SITES.find(x => x.id === state.selected); if (s) ls.push(new deck.ScatterplotLayer({ id: "sel", data: [s], getPosition: d => [d.lon, d.lat], getRadius: 13, radiusUnits: "pixels", filled: false, stroked: true, getLineColor: online ? [255, 255, 255, 255] : tok("--ink"), getLineWidth: 3, lineWidthUnits: "pixels" })); }
+  if (L.labels && !online) {
+    const CH = [...new Set((G.towns.map(t => t.name).join("") + G.regions.features.map(f => f.properties.name.toUpperCase()).join("")).split(""))];
+    ls.push(new deck.TextLayer({ id: "towns", data: G.towns, getPosition: t => [t.lon, t.lat], getText: t => t.name, getSize: t => t.cap ? 13 : 11, getColor: tok("--ink", 220), fontFamily: "Inter, sans-serif", fontWeight: 600, getPixelOffset: [8, -7], getTextAnchor: "start", characterSet: CH, fontSettings: { sdf: true }, outlineWidth: 2.5, outlineColor: tok("--surface", 220), updateTriggers: { getColor: [dark], outlineColor: [dark] } }));
+  }
+  return ls.filter(Boolean);
+}
+function pointsLayer(list) {
+  return new deck.ScatterplotLayer({ id: "sites", data: list, pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 120], getPosition: s => [s.lon, s.lat], getRadius: s => s.check ? 5.5 : 5, radiusUnits: "pixels", radiusMinPixels: 3,
+    getFillColor: siteColor, stroked: true, getLineColor: s => s.check && view.color !== "qc" ? tok("--crit") : [255, 255, 255, 230], getLineWidth: s => s.check && view.color !== "qc" ? 2 : 1.2, lineWidthUnits: "pixels",
+    updateTriggers: { getFillColor: [view.color, view.radius, view.expVersion, T["--bg"]], getLineColor: [view.color, T["--bg"]] } });
+}
+function tooltip({ object, layer }) {
+  if (!object) return null;
+  if (layer.id === "sites") return { html: `<b>${esc(object.nom)}</b><br><span style="opacity:.75">n° ${object.id} · ${esc(object.ville)}</span><br>${esc(object.region)} / ${esc(object.province)}${object.check ? `<br><span style="color:${T["--warn"]}">Géolocalisation : ${esc(object.qc)}</span>` : ""}` };
+  if (layer.id === "cl") return { html: `<b>${object.properties.point_count} sites</b><br><span style="opacity:.75">Cliquez pour zoomer</span>` };
+  if (layer.id === "regions") return { html: `<b>${esc(object.properties.name)}</b><br>${fmt(filtered().filter(s => s.region === object.properties.name).length)} site(s) affiché(s)` };
+  if (layer.id === "inc") return { html: `<b>${esc(object.type || "Incident")}</b>${object.date ? " · " + esc(object.date) : ""}<br>${esc((object.description || "").slice(0, 160))}<br><span style="opacity:.75">${esc(object.source || "")}</span>` };
+  return null;
+}
+function initMap() {
+  deckgl = new deck.Deck({ parent: $("#map"), views: new deck.MapView({ repeat: false }), viewState, controller: { minZoom: 3.5, maxZoom: 18 },
+    onViewStateChange: ({ viewState: vs }) => { const zChanged = Math.round(vs.zoom) !== Math.round(viewState.zoom); viewState = vs; deckgl.setProps({ viewState }); if (zChanged && view.layers.cluster) redraw(); },
+    getTooltip: tooltip, layers: [],
+    onClick: ({ object, layer }) => {
+      if (!object || !layer) return;
+      if (layer.id === "sites") select(object.id, false);
+      else if (layer.id === "cl") { const z = Math.min(cluster.getClusterExpansionZoom(object.properties.cluster_id), 16); flyTo({ ...viewState, longitude: object.geometry.coordinates[0], latitude: object.geometry.coordinates[1], zoom: z }); }
+      else if (layer.id === "regions") { state.reg = object.properties.name; $("#f-reg").value = state.reg; render(); fitTo(filtered()); }
+    } });
+  const lyr = [["cluster", "Agrégats"], ["heat", "Densité"], ["regions", "Régions"], ["subs", "Provinces"], ["roads", "Routes"], ["incidents", "Incidents"], ["labels", "Villes"]];
+  $("#layers").innerHTML = `<span class="eyebrow">Couches</span>` + lyr.map(([k, l]) => `<button type="button" class="ltog" data-k="${k}" aria-pressed="${view.layers[k]}">${l}</button>`).join("") + `<button type="button" class="ltog" id="home">Recentrer</button>`;
+  $("#layers").onclick = e => { const b = e.target.closest(".ltog"); if (!b) return; if (b.id === "home") return fitTo(filtered()); view.layers[b.dataset.k] = !view.layers[b.dataset.k]; b.setAttribute("aria-pressed", view.layers[b.dataset.k]); redraw(); renderLegend(); };
+  document.querySelectorAll("[data-base]").forEach(b => b.onclick = () => setBase(b.dataset.base));
+  $("#color-by").onchange = e => { view.color = e.target.value; redraw(); renderLegend(); };
+  setBase(view.base);
+}
+function setBase(b) { view.base = b; view.tileErrors = 0; document.querySelectorAll("[data-base]").forEach(x => x.setAttribute("aria-pressed", x.dataset.base === b)); $("#attrib").textContent = BASES[b].attrib; redraw(); renderLegend(); }
+function flyTo(vs, ms = 1000) { if (!deckgl) return; viewState = { ...vs, transitionDuration: ms, transitionInterpolator: new deck.FlyToInterpolator() }; deckgl.setProps({ viewState }); setTimeout(redraw, ms + 30); }
+function fitTo(list, feature) {
+  if (!deckgl) return;
+  let pts = list && list.length ? list.map(s => [s.lon, s.lat]) : [];
+  if (!pts.length) { const fs = feature ? [feature] : G.countries.features.filter(f => ["BFA", "MLI", "NER"].includes(f.properties.iso)); fs.forEach(f => (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates).forEach(p => p[0].forEach(c => pts.push(c)))); }
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; pts.forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
+  if (x1 - x0 < .05) { x0 -= .05; x1 += .05; y0 -= .05; y1 += .05; }
+  const el = $("#map"), vp = new deck.WebMercatorViewport({ width: el.clientWidth, height: el.clientHeight });
+  const wide = el.clientWidth > 700;
+  const f = vp.fitBounds([[x0, y0], [x1, y1]], { padding: { top: wide ? 110 : 140, bottom: 40, left: wide ? 270 : 30, right: 40 } });
+  flyTo({ longitude: f.longitude, latitude: f.latitude, zoom: Math.min(f.zoom, 15), pitch: 0, bearing: 0 });
+}
+function redraw() { if (deckgl) deckgl.setProps({ layers: layers() }); }
+function renderLegend() {
+  let h = "";
+  if (view.color === "zone") h = `<span class="eyebrow">Zone commerciale</span>` + ZONES.map(z => `<div class="row"><span class="dot" style="--c:${ZC[z]}"></span>${esc(z)}</div>`).join("");
+  if (view.color === "qc") h = `<span class="eyebrow">Géolocalisation</span>` + Object.keys(QC_COLORS).filter(k => SITES.some(s => s.qc === k)).map(k => `<div class="row"><span class="dot" style="--c:var(${QC_COLORS[k]})"></span>${esc(k === "OK" ? "Fiable" : k)}</div>`).join("");
+  if (view.color === "age") h = `<span class="eyebrow">Année d’activation</span><div class="row"><span class="dot" style="--c:rgb(200,120,220)"></span>2019</div><div class="row"><span class="dot" style="--c:rgb(120,160,160)"></span>2022</div><div class="row"><span class="dot" style="--c:rgb(40,200,100)"></span>2026</div>`;
+  if (view.color === "exp") h = `<span class="eyebrow">Exposition (rayon ${view.radius} km)</span><div class="row"><span class="dot" style="--c:var(--crit)"></span>Incident dans le rayon</div><div class="row"><span class="dot" style="--c:var(--warn)"></span>Incident à moins de ${view.radius * 2} km</div><div class="row"><span class="dot" style="--c:var(--ok)"></span>Aucun incident proche</div><div class="row"><span class="dot" style="--c:var(--muted)"></span>Pas d’incident chargé</div>`;
+  if (view.color !== "qc") h += `<div class="row" style="color:var(--muted)"><span class="dot" style="--c:transparent;border:2px solid var(--crit)"></span>Position à vérifier</div>`;
+  if (view.layers.cluster) h += `<div class="row" style="color:var(--muted)"><span class="dot" style="--c:var(--accent);width:14px;height:14px"></span>Agrégat : nombre de sites</div>`;
+  $("#legend").innerHTML = h;
+}
+
+/* ---------- Fiche site ---------- */
+function select(id, fly = true) {
+  const s = SITES.find(x => x.id === id); if (!s) return;
+  state.selected = id;
+  if (fly) flyTo({ ...viewState, longitude: s.lon, latitude: s.lat, zoom: Math.max(viewState.zoom, 14) });
+  try { history.replaceState(null, "", "#site-" + id); } catch (e) { /* facultatif */ }
+  redraw(); renderSide();
+}
+function renderSide() {
+  const s = state.selected ? SITES.find(x => x.id === state.selected) : null, body = $("#side-body");
+  $("#side-close").hidden = !s;
+  if (!s) {
+    const list = filtered(), by = {}; list.forEach(x => { const k = x.region || "Non localisé"; by[k] = (by[k] || 0) + 1; });
+    const rows = Object.entries(by).sort((a, b) => b[1] - a[1]), max = rows.length ? rows[0][1] : 1;
+    $("#side-title").innerHTML = `<span class="eyebrow">${esc(state.iso ? isoName(state.iso) : "Burkina Faso · Mali · Niger")}</span><h3>Répartition par région</h3>`;
+    const empty = DATA.countries.filter(c => !c.n).map(c => c.name);
+    body.innerHTML = (empty.length ? `<p class="sub" style="color:var(--muted)">${empty.join(" et ")} : aucun site chargé. Ajoutez l’export du pays au même format pour fédérer les trois réseaux.</p>` : "") +
+      (rows.length ? `<div class="bars">${rows.map(([r, n]) => `<button type="button" data-r="${esc(r)}"><span>${esc(r)}</span><span class="num" style="color:var(--muted)">${fmt(n)}</span><span class="b"><i style="width:${100 * n / max}%"></i></span></button>`).join("")}</div>` : `<p style="color:var(--muted)">Aucun site ne correspond aux filtres.</p>`) +
+      `<p class="sub" style="color:var(--muted)">Cliquez une région pour filtrer, ou un site sur la carte pour ouvrir sa fiche.</p>`;
+    body.querySelectorAll(".bars button").forEach(b => b.onclick = () => { state.reg = b.dataset.r; $("#f-reg").value = state.reg; render(); fitTo(filtered()); });
+    return;
+  }
+  const e = view.exposure && view.exposure[s.id];
+  const qcCol = `var(${QC_COLORS[s.qc] || "--muted"})`;
+  $("#side-title").innerHTML = `<span class="eyebrow">n° distributeur ${s.id}</span><h3>${esc(s.nom)}</h3>`;
+  body.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill" style="color:${ZC[s.zone || "Non renseignée"]}">${esc(s.zone || "Zone non renseignée")}</span><span class="pill" style="color:${qcCol}">${esc(s.qc === "OK" ? "Géolocalisation fiable" : s.qc)}</span></div>
+    ${s.qc_detail ? `<p style="font-size:.84rem;color:var(--muted)">${esc(s.qc_detail)}</p>` : ""}
+    <dl class="kv"><dt>Ville</dt><dd>${esc(s.ville)}</dd><dt>Adresse</dt><dd>${esc(s.adresse || "—")}</dd><dt>Région</dt><dd>${esc(s.region)}${s.region_declaree && s.region_declaree.toLowerCase() !== s.region.toLowerCase() ? ` <span style="color:var(--muted)">(déclarée : ${esc(s.region_declaree)})</span>` : ""}</dd>
+      <dt>Province / cercle</dt><dd>${esc(s.province)}</dd><dt>Pays</dt><dd>${esc(s.pays)}</dd><dt>Secteur</dt><dd>${esc(s.secteur || "—")}</dd><dt>Activation</dt><dd>${s.activation ? new Date(s.activation).toLocaleDateString("fr-FR") : "—"}</dd>
+      <dt>Site voisin</dt><dd>${s.voisin_km != null ? fmt(s.voisin_km, 2) + " km" : "—"}</dd>
+      <dt>Coordonnées</dt><dd class="num">${s.lat.toFixed(6)}, ${s.lon.toFixed(6)} <button class="btn" id="cp" type="button" style="padding:1px 6px;font-size:.72rem">Copier</button></dd>
+      <dt>Exposition</dt><dd>${e ? (e.n ? `<b style="color:var(--crit)">${e.n} incident(s)</b> à ≤ ${view.radius} km · le plus proche à ${fmt(e.d, 1)} km` : `Aucun incident à ≤ ${view.radius} km (le plus proche à ${fmt(e.d, 1)} km)`) : "Aucun incident chargé"}</dd></dl>
+    <div class="links"><a href="https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}" target="_blank" rel="noopener">Google Maps ↗</a><a href="https://www.openstreetmap.org/?mlat=${s.lat}&mlon=${s.lon}#map=17/${s.lat}/${s.lon}" target="_blank" rel="noopener">OpenStreetMap ↗</a><a href="https://www.google.com/maps/@${s.lat},${s.lon},300m/data=!3m1!1e3" target="_blank" rel="noopener">Vue satellite ↗</a></div>
+    <button class="btn" id="zoom-sat" type="button">Voir le site en imagerie satellite</button>`;
+  $("#cp").onclick = ev => { const t = `${s.lat}, ${s.lon}`; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => ev.target.textContent = "Copié", () => ev.target.textContent = t); };
+  $("#zoom-sat").onclick = () => { setBase("sat"); flyTo({ ...viewState, longitude: s.lon, latitude: s.lat, zoom: 17 }); };
+}
+
+/* ---------- Sécurité ---------- */
+const incidents = () => (view.useMali ? DATA.incidents : []).concat(view.incImported);
+function computeExposure() {
+  const inc = incidents();
+  if (!inc.length) { view.exposure = null; return; }
+  const ex = {};
+  SITES.forEach(s => { let n = 0, d = 1e9; inc.forEach(i => { const k = hav(s.lat, s.lon, i.lat, i.lon); if (k < d) d = k; if (k <= view.radius) n++; }); ex[s.id] = { n, d }; });
+  view.exposure = ex; view.expVersion = (view.expVersion || 0) + 1;
+}
+function renderSecurity() {
+  const list = filtered(), ex = view.exposure;
+  $("#n-mali").textContent = DATA.incidents.length;
+  if (!ex) {
+    $("#exp-sub").textContent = "Aucun incident chargé. Cochez la base Mali ou importez un fichier.";
+    $("#exp-reg").innerHTML = ""; $("#exp-top").innerHTML = `<tbody><tr><td style="color:var(--muted);padding:12px">Le classement s’affiche dès qu’un incident est chargé.</td></tr></tbody>`;
+    return;
+  }
+  const by = {}; list.forEach(s => { const k = s.region || "—"; by[k] ||= { n: 0, e: 0 }; by[k].n++; if (ex[s.id].n) by[k].e++; });
+  const rows = Object.entries(by).sort((a, b) => b[1].e - a[1].e || b[1].n - a[1].n);
+  const tot = list.filter(s => ex[s.id].n).length;
+  $("#exp-sub").textContent = `${fmt(tot)} site(s) sur ${fmt(list.length)} ont au moins un incident à ≤ ${view.radius} km (${incidents().length} incident(s) chargé(s)).`;
+  $("#exp-reg").innerHTML = rows.slice(0, 12).map(([r, v]) => `<button type="button" style="--c:var(--crit)" data-r="${esc(r)}"><span>${esc(r)}</span><span class="num" style="color:var(--muted)">${v.e} / ${v.n}</span><span class="b"><i style="width:${v.n ? 100 * v.e / v.n : 0}%"></i></span></button>`).join("");
+  $("#exp-reg").querySelectorAll("button").forEach(b => b.onclick = () => { state.reg = b.dataset.r; $("#f-reg").value = state.reg; render(); fitTo(filtered()); });
+  const top = [...list].sort((a, b) => ex[b.id].n - ex[a.id].n || ex[a.id].d - ex[b.id].d).slice(0, 25);
+  $("#exp-top").innerHTML = `<thead><tr><th>Site</th><th>Région</th><th>Incidents</th><th>Plus proche</th></tr></thead><tbody>` + top.map(s => `<tr class="click" data-id="${s.id}"><td>${esc(s.nom)}<br><span style="color:var(--muted)">${esc(s.ville)}</span></td><td>${esc(s.region)}</td><td class="num" style="color:${ex[s.id].n ? "var(--crit)" : "inherit"};font-weight:600">${ex[s.id].n}</td><td class="num">${fmt(ex[s.id].d, 1)} km</td></tr>`).join("") + "</tbody>";
+  $("#exp-top tbody").onclick = e => { const tr = e.target.closest("tr[data-id]"); if (tr) select(+tr.dataset.id); };
+}
+function parseRows(rows) {
+  const pick = (o, re) => { const k = Object.keys(o).find(k => re.test(k.trim().toLowerCase())); return k ? o[k] : undefined; };
+  const num = v => parseFloat(String(v ?? "").replace(",", "."));
+  return rows.map(o => ({ lat: num(pick(o, /^(lat|latitude|y)$/)), lon: num(pick(o, /^(lon|lng|long|longitude|x)$/)), date: String(pick(o, /date/) ?? ""), type: String(pick(o, /type|typolog|mode|cat/) ?? ""), description: String(pick(o, /desc|d[ée]tail|lieu|localit/) ?? ""), source: "Import" }))
+    .filter(p => isFinite(p.lat) && isFinite(p.lon) && Math.abs(p.lat) <= 90 && Math.abs(p.lon) <= 180);
+}
+function readFile(f) {
+  const ext = f.name.split(".").pop().toLowerCase(), r = new FileReader();
+  r.onload = () => {
+    try {
+      let rows;
+      if (ext === "xlsx" || ext === "xls") { const wb = XLSX.read(r.result, { type: "array" }); rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" }); }
+      else if (ext === "json" || ext === "geojson") { const g = JSON.parse(r.result); rows = (g.features || []).filter(x => x.geometry && x.geometry.type === "Point").map(x => ({ ...x.properties, lon: x.geometry.coordinates[0], lat: x.geometry.coordinates[1] })); }
+      else { const wb = XLSX.read(r.result, { type: "string", FS: (String(r.result).split("\n")[0].match(/;/g) || []).length ? ";" : "," }); rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" }); }
+      const inc = parseRows(rows);
+      view.incImported = inc; $("#inc-status").textContent = inc.length ? `${inc.length} incident(s) importé(s) depuis ${f.name}.` : "Aucune ligne valide : vérifiez les colonnes lat et lon.";
+      afterIncidents(true);
+    } catch (e) { $("#inc-status").textContent = "Fichier illisible : " + e.message; }
+  };
+  if (ext === "xlsx" || ext === "xls") r.readAsArrayBuffer(f); else r.readAsText(f);
+}
+function afterIncidents(switchColor) {
+  computeExposure();
+  if (switchColor && view.exposure) {
+    view.color = "exp"; $("#color-by").value = "exp";
+    // sites affichés individuellement pour voir leur niveau d'exposition
+    view.layers.cluster = false; const b = document.querySelector('.ltog[data-k="cluster"]'); if (b) b.setAttribute("aria-pressed", "false");
+  }
+  render();
+}
+function initSecurity() {
+  const drop = $("#drop"), file = $("#file");
+  file.onchange = () => file.files[0] && readFile(file.files[0]);
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) readFile(f); });
+  $("#use-mali").onchange = e => { view.useMali = e.target.checked; afterIncidents(e.target.checked); if (e.target.checked) fitTo(null); };
+  $("#clear-inc").onclick = () => { view.incImported = []; $("#inc-status").textContent = ""; afterIncidents(false); };
+  document.querySelectorAll("[data-r]").forEach(b => { if (!b.closest(".bars")) b.onclick = () => { view.radius = +b.dataset.r; document.querySelectorAll(".seg [data-r]").forEach(x => x.setAttribute("aria-pressed", x === b)); afterIncidents(false); }; });
+}
+
+/* ---------- Graphiques, contrôle, registre ---------- */
+const charts = {};
+function renderCharts(list) {
+  if (!window.echarts) return;
+  const base = { textStyle: { fontFamily: "Inter, sans-serif", color: T["--ink"] }, tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, backgroundColor: T["--surface"], borderColor: T["--line"], textStyle: { color: T["--ink"] } }, grid: { left: 8, right: 34, top: 8, bottom: 8, containLabel: true } };
+  const val = { type: "value", axisLabel: { color: T["--muted"] }, splitLine: { lineStyle: { color: T["--line"] } } };
+  const cat = d => ({ type: "category", data: d, axisLabel: { color: T["--ink"], fontSize: 11 }, axisLine: { lineStyle: { color: T["--line"] } }, axisTick: { show: false } });
+  const count = key => { const m = {}; list.forEach(s => { const k = s[key] || "Non renseigné"; m[k] = (m[k] || 0) + 1; }); return Object.entries(m); };
+  const reg = count("region").sort((a, b) => a[1] - b[1]);
+  (charts.reg ||= echarts.init($("#c-reg"))).setOption({ ...base, xAxis: val, yAxis: cat(reg.map(r => r[0])), series: [{ type: "bar", data: reg.map(r => r[1]), itemStyle: { color: T["--accent"], borderRadius: [0, 3, 3, 0] }, barMaxWidth: 16, label: { show: true, position: "right", color: T["--muted"], fontSize: 10 } }] }, true);
+  const zone = count("zone").sort((a, b) => a[1] - b[1]);
+  (charts.zone ||= echarts.init($("#c-zone"))).setOption({ ...base, xAxis: val, yAxis: cat(zone.map(r => r[0])), series: [{ type: "bar", data: zone.map(r => ({ value: r[1], itemStyle: { color: ZC[r[0]] || T["--muted"], borderRadius: [0, 3, 3, 0] } })), barMaxWidth: 18, label: { show: true, position: "right", color: T["--muted"], fontSize: 10 } }] }, true);
+  const yr = count("annee").filter(r => r[0] !== "Non renseigné").sort((a, b) => a[0] - b[0]);
+  (charts.year ||= echarts.init($("#c-year"))).setOption({ ...base, xAxis: { ...cat(yr.map(r => r[0])), axisLabel: { color: T["--muted"] } }, yAxis: val, series: [{ type: "bar", data: yr.map(r => r[1]), itemStyle: { color: T["--accent"], borderRadius: [3, 3, 0, 0] }, barMaxWidth: 34, label: { show: true, position: "top", color: T["--muted"], fontSize: 10 } }] }, true);
+}
+function renderQC() {
+  const bad = SITES.filter(s => s.check);
+  const g = {}; bad.forEach(s => g[s.qc] = (g[s.qc] || 0) + 1);
+  $("#qc-intro").textContent = `${bad.length} site(s) sur ${SITES.length} signalés : ` + Object.entries(g).map(([k, v]) => `${v} « ${k.toLowerCase()} »`).join(", ") + ". Les corrections sont appliquées sur la carte ; les coordonnées d’origine restent dans le classeur Excel.";
+  $("#qc").innerHTML = `<thead><tr><th>N°</th><th>Site</th><th>Ville</th><th>Contrôle</th><th>Détail</th><th>Position retenue</th></tr></thead><tbody>` +
+    bad.sort((a, b) => a.qc.localeCompare(b.qc)).map(s => `<tr class="click" data-id="${s.id}"><td class="num">${s.id}</td><td>${esc(s.nom)}</td><td>${esc(s.ville)}</td><td><span class="pill" style="color:var(${QC_COLORS[s.qc] || "--muted"})">${esc(s.qc)}</span></td><td style="color:var(--muted)">${esc(s.qc_detail)}</td><td class="num">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}</td></tr>`).join("") + "</tbody>";
+  $("#qc tbody").onclick = e => { const tr = e.target.closest("tr[data-id]"); if (tr) { select(+tr.dataset.id); $(".mapgrid").scrollIntoView({ behavior: "smooth" }); } };
+}
+function renderTable(list) {
+  const cols = [["id", "N°"], ["nom", "Nom"], ["ville", "Ville"], ["region", "Région"], ["province", "Province / cercle"], ["zone", "Zone"], ["activation", "Activation"], ["qc", "Géolocalisation"]];
+  const { k, dir } = state.sort;
+  const rows = [...list].sort((a, b) => (typeof a[k] === "number" ? a[k] - b[k] : String(a[k] || "").localeCompare(String(b[k] || ""), "fr")) * dir);
+  $("#tbl").innerHTML = `<thead><tr>${cols.map(([c, l]) => `<th data-k="${c}" aria-sort="${c === k ? (dir > 0 ? "ascending" : "descending") : "none"}">${l}</th>`).join("")}</tr></thead><tbody>` +
+    rows.map(s => `<tr class="click" data-id="${s.id}"><td class="num">${s.id}</td><td>${esc(s.nom)}</td><td>${esc(s.ville)}</td><td>${esc(s.region)}</td><td>${esc(s.province)}</td><td><span class="sw" style="--c:${ZC[s.zone || "Non renseignée"]}"></span>${esc(s.zone)}</td><td class="num">${s.activation ? s.activation.split("-").reverse().join("/") : "—"}</td><td><span class="pill" style="color:var(${QC_COLORS[s.qc] || "--muted"})">${esc(s.qc === "OK" ? "Fiable" : s.qc)}</span></td></tr>`).join("") + "</tbody>";
+  $("#tbl thead").onclick = e => { const th = e.target.closest("th"); if (!th) return; state.sort = { k: th.dataset.k, dir: state.sort.k === th.dataset.k ? -state.sort.dir : 1 }; renderTable(filtered()); };
+  $("#tbl tbody").onclick = e => { const tr = e.target.closest("tr[data-id]"); if (tr) { select(+tr.dataset.id); $(".mapgrid").scrollIntoView({ behavior: "smooth" }); } };
+}
+
+function render() {
+  const list = filtered();
+  view.list = list;
+  buildCluster(list);
+  renderKPIs(list); redraw(); renderLegend(); renderSide(); renderSecurity(); renderCharts(list); renderTable(list);
+}
+function boot() {
+  readTokens();
+  $("#gen").textContent = "Mise à jour : " + new Date(DATA.generated).toLocaleDateString("fr-FR");
+  renderTabs(); initFilters(); renderQC(); initSecurity();
+  if (window.deck) initMap(); else $("#map").innerHTML = `<p style="padding:20px;color:var(--muted)">Le moteur cartographique n’a pas pu être chargé : vérifiez l’accès à unpkg.com.</p>`;
+  render();
+  setTimeout(() => fitTo(filtered()), 60);
+  $("#side-close").onclick = () => { state.selected = null; try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* facultatif */ } redraw(); renderSide(); };
+  const fromHash = () => { const m = location.hash.match(/^#site-(\d+)$/); if (m && +m[1] !== state.selected) setTimeout(() => select(+m[1]), 400); };
+  window.addEventListener("hashchange", fromHash); fromHash();
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => Object.values(charts).forEach(c => c.resize()), 120); });
+  const retheme = () => { readTokens(); Object.values(charts).forEach(c => c.dispose()); for (const k in charts) delete charts[k]; render(); };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  $("#theme-btn").onclick = () => { document.documentElement.dataset.theme = isDark() ? "light" : "dark"; };
+}
+boot();
+})();
+</script>
