@@ -142,7 +142,7 @@ def sheet_dash(wb, s):
         ws.column_dimensions[c].width = w
     section(ws, 4, "Accès à la carte en ligne", 2, 7)
     cell(ws, 5, 2, "Lien Netlify (à coller après déploiement)", bold=True)
-    u = ws.cell(5, 3, "https://votre-site.netlify.app")
+    u = ws.cell(5, 3, "https://sites-canal.netlify.app")
     u.font, u.fill, u.border = f(11, True, "0000FF"), fill("FFF2B3"), BOX
     ws.merge_cells("C5:H5")
     wb.defined_names["URL_CARTE"] = DefinedName("URL_CARTE", attr_text="TABLEAU_DE_BORD!$C$5")

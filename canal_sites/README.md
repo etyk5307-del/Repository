@@ -15,3 +15,15 @@ Sorties dans `canal_sites/dist/` (exclu du dépôt : les exports contiennent des
 
 Contrôles appliqués aux coordonnées : position comparée au pays déclaré, signe de longitude manquant
 corrigé, positions génériques ou partagées signalées. Les coordonnées d'origine restent dans le classeur.
+
+## Application « Sûreté des sites » (version 2)
+
+```bash
+python canal_sites/build_app.py <dossier_geo>   # après build_sites.py
+```
+
+`dist/app_netlify/` (ou `App_Netlify_Surete_Sites.zip`) remplace le site Netlify : glisser le dossier sur
+l'onglet *Deploys* du site existant pour garder la même adresse. Carte Leaflet sur les trois pays, onglets
+Synthèse, Filtres (pays → région → province), Sites (import et export), Sécurité (import d'incidents,
+niveau de sûreté par site et par région, export Excel), Itinéraires et Trajet (fiche mission, alerte de nuit).
+Itinéraire : OSRM en ligne, sinon réseau routier Natural Earth intégré.
