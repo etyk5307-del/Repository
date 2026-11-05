@@ -19,7 +19,7 @@ from shapely.geometry import box, mapping, shape
 from shapely.ops import unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_sites import BFA_REGION, COUNTRIES, MLI_FR, PUBLIC, mali_incidents  # noqa: E402
+from build_sites import COUNTRIES, MLI_FR, PUBLIC, bfa_regions_2025, mali_incidents  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 DIST = HERE / "dist"
@@ -58,11 +58,11 @@ def geo_layers(src):
         if iso in LABEL_AT:
             labels.append({"iso": iso, "name": FR_NAMES[iso], "lon": LABEL_AT[iso][0], "lat": LABEL_AT[iso][1], "focus": iso in COUNTRIES})
     regions, subs = [], []
-    for iso, fn, rename in (("BFA", "bfa_ADM1.geojson", BFA_REGION), ("MLI", "gb_ADM1.geojson", MLI_FR)):
-        for f in load(src, fn)["features"]:
-            g = shape(f["geometry"])
-            regions.append({"type": "Feature", "properties": {"iso": iso, "name": rename.get(f["properties"]["shapeName"], f["properties"]["shapeName"])},
-                            "geometry": rnd(g.simplify(0.006, preserve_topology=True))})
+    for name, g in bfa_regions_2025(src):
+        regions.append({"type": "Feature", "properties": {"iso": "BFA", "name": name}, "geometry": rnd(g.simplify(0.006, preserve_topology=True))})
+    for f in load(src, "gb_ADM1.geojson")["features"]:
+        regions.append({"type": "Feature", "properties": {"iso": "MLI", "name": MLI_FR.get(f["properties"]["shapeName"], f["properties"]["shapeName"])},
+                        "geometry": rnd(shape(f["geometry"]).simplify(0.006, preserve_topology=True))})
     for f in load(src, "ne_10m_admin_1_states_provinces.geojson")["features"]:
         if f["properties"]["adm0_a3"] == "NER":
             regions.append({"type": "Feature", "properties": {"iso": "NER", "name": f["properties"]["name"]}, "geometry": rnd(shape(f["geometry"]).simplify(0.01, preserve_topology=True))})

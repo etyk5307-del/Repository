@@ -362,6 +362,7 @@ function computePosture() {
       if (Math.abs(i.lat - s.lat) > 3 || Math.abs(i.lon - s.lon) > 3) continue;
       const d = hav(s.lat, s.lon, i.lat, i.lon);
       if (d < dmin) { dmin = d; near = i; }
+      if (i.approx) { if (d <= r3) n3++; continue; } // position approximative : n'élève pas au-delà d'« Attention »
       if (i.grave && d < dgrave) dgrave = d;
       if (d <= r1) { n1++; if (i.grave) g1++; }
       if (d <= r2) { n2++; if (i.grave) g2++; }
@@ -559,8 +560,9 @@ function renderIncidents() {
   layers.inc = L.layerGroup();
   if (view.lyr.incidents) incF().forEach(i => {
     const red = cssv("--adapt"), org = cssv("--veille");
-    if (i.grave && view.lyr.rings) [18, 12].forEach(r => layers.inc.addLayer(L.circleMarker([i.lat, i.lon], { pane: "inc", radius: r, color: red, weight: 1.4, dashArray: "4 3", fill: false, interactive: false })));
-    const m = L.circleMarker([i.lat, i.lon], { pane: "inc", radius: i.grave ? 8 : 5, color: "#ffffff", weight: 1.6, fillColor: i.grave ? red : org, fillOpacity: 1 });
+    if (i.grave && !i.approx && view.lyr.rings) [18, 12].forEach(r => layers.inc.addLayer(L.circleMarker([i.lat, i.lon], { pane: "inc", radius: r, color: red, weight: 1.4, dashArray: "4 3", fill: false, interactive: false })));
+    const m = i.approx ? L.circleMarker([i.lat, i.lon], { pane: "inc", radius: i.grave ? 8 : 5, color: i.grave ? red : org, weight: 2, dashArray: "3 2", fillColor: cssv("--surface"), fillOpacity: .9 })
+      : L.circleMarker([i.lat, i.lon], { pane: "inc", radius: i.grave ? 8 : 5, color: "#ffffff", weight: 1.6, fillColor: i.grave ? red : org, fillOpacity: 1 });
     m.bindPopup(incPopup(i), { maxWidth: 320 }); layers.inc.addLayer(m);
   });
   layers.inc.addTo(map);
@@ -575,7 +577,7 @@ function sitePopup(s) {
 }
 function incPopup(i) {
   return `<div class="pop"><h4>${esc(i.type || "Incident")}${i.grave ? ` <span class="lvl" style="--c:var(--adapt)">grave</span>` : ""}</h4><div class="m">${frDate(i.date)} · ${esc(i.localite || "")} · ${esc(i.region || "")}</div>
-    <p style="margin:6px 0 0;font-size:.86rem">${esc((i.description || "").slice(0, 280))}</p><dl><dt>Bilan</dt><dd>${i.tues || 0} tué(s) · ${i.blesses || 0} blessé(s)</dd>${i.auteur ? `<dt>Auteur</dt><dd>${esc(i.auteur)}</dd>` : ""}<dt>Source</dt><dd>${esc(i.source || "—")}</dd></dl></div>`;
+    <p style="margin:6px 0 0;font-size:.86rem">${esc((i.description || "").slice(0, 280))}</p><dl><dt>Bilan</dt><dd>${i.tues || 0} tué(s) · ${i.blesses || 0} blessé(s)</dd>${i.prec ? `<dt>Position</dt><dd>${esc(i.prec)}${i.approx ? ` <span class="warn">(approximative)</span>` : ""}</dd>` : ""}${i.auteur ? `<dt>Auteur</dt><dd>${esc(i.auteur)}</dd>` : ""}<dt>Source</dt><dd>${esc(i.source || "—")}</dd></dl></div>`;
 }
 function fitCountries(isos) { const fs = G.countries.features.filter(f => isos.includes(f.properties.iso)); if (fs.length) map.flyToBounds(L.geoJSON({ type: "FeatureCollection", features: fs }).getBounds(), { padding: [20, 20], duration: .8 }); }
 function fitFilter() {
@@ -590,10 +592,10 @@ function renderLegend() {
     <span class="lbl">Niveau de sûreté des sites</span>${POST.map(p => `<div class="r"><span class="dot" style="--c:var(${p.v})"></span>${p.label}</div>`).join("")}
     <div class="r"><span class="dot" style="--c:var(--surface);border:2px solid var(--info)"></span>Position corrigée ou à vérifier</div>
     <div class="r"><span class="cl" style="width:20px;height:20px;background:var(--veille);font-size:9px">12</span>Groupe de sites (couleur du plus exposé)</div>
-    <span class="lbl" style="margin-top:4px">Incidents</span><div class="r"><span class="dot" style="--c:var(--adapt);box-shadow:0 0 0 3px var(--surface),0 0 0 4.5px var(--adapt)"></span>Incident grave</div><div class="r"><span class="dot" style="--c:var(--veille)"></span>Autre incident</div>
+    <span class="lbl" style="margin-top:4px">Incidents</span><div class="r"><span class="dot" style="--c:var(--adapt);box-shadow:0 0 0 3px var(--surface),0 0 0 4.5px var(--adapt)"></span>Incident grave</div><div class="r"><span class="dot" style="--c:var(--veille)"></span>Autre incident</div><div class="r"><span class="dot" style="--c:var(--surface);border:2px dashed var(--adapt)"></span>Position approximative (commune ou province)</div>
     ${view.choro === "threat" ? `<span class="lbl" style="margin-top:4px">Niveau des régions</span>` + LEVELS.map(l => `<div class="r"><span class="dot" style="--c:var(${l[1]});border-radius:2px;opacity:.6"></span>${l[0]}</div>`).join("") : ""}
     ${view.route ? `<span class="lbl" style="margin-top:4px">Itinéraire</span><div class="r"><span style="width:22px;height:4px;background:var(--normal);display:inline-block"></span>Tronçon sans incident proche</div><div class="r"><span style="width:22px;height:4px;background:var(--adapt);display:inline-block"></span>Tronçon exposé</div>` : ""}
-    <p class="note" style="margin:4px 0 0">Règles : adaptation si incident grave à ≤ ${state.r1} km ou 3 incidents ; veille si grave à ≤ ${state.r2} km ou 2 incidents ; attention si un incident à ≤ ${state.r3} km.</p></div>`;
+    <p class="note" style="margin:4px 0 0">Règles : adaptation si incident grave à ≤ ${state.r1} km ou 3 incidents ; veille si grave à ≤ ${state.r2} km ou 2 incidents ; attention si un incident à ≤ ${state.r3} km. Un incident à position approximative ne fait passer un site qu’en « Attention ».</p></div>`;
   leg.open = open;
 }
 
@@ -601,11 +603,12 @@ function renderLegend() {
 function renderSynthese() {
   const S = sitesF(), I = incF(), n = S.length;
   const cnt = k => S.filter(s => postOf(s) === k).length;
+  const pct = (a, b) => { const v = 100 * a / b; return v === 100 ? "100" : fmt(Math.floor(v * 10) / 10, 1); }; // jamais « 100 % » s'il reste un site hors Normal/Attention
   const na = cnt("normal") + cnt("attention"), ad = cnt("adapt"), ve = cnt("veille");
   const graves = I.filter(i => i.grave), tues = I.reduce((a, i) => a + (i.tues || 0), 0), bl = I.reduce((a, i) => a + (i.blesses || 0), 0);
   let gmin = Infinity, gsite = null, ginc = null;
-  if (graves.length) S.forEach(s => graves.forEach(i => { if (Math.abs(i.lat - s.lat) > 2 || Math.abs(i.lon - s.lon) > 2) return; const d = hav(s.lat, s.lon, i.lat, i.lon); if (d < gmin) { gmin = d; gsite = s; ginc = i; } }));
-  const cards = [[fmt(n), "sites analysés"], [n ? Math.round(100 * na / n) + " %" : "—", "sites en Normal ou Attention"], [fmt(ad), "sites en adaptation opérationnelle", ad ? "red" : ""],
+  if (graves.length) S.forEach(s => graves.forEach(i => { if (i.approx) return; if (Math.abs(i.lat - s.lat) > 2 || Math.abs(i.lon - s.lon) > 2) return; const d = hav(s.lat, s.lon, i.lat, i.lon); if (d < gmin) { gmin = d; gsite = s; ginc = i; } }));
+  const cards = [[fmt(n), "sites analysés"], [n ? pct(na, n) + " %" : "—", "sites en Normal ou Attention"], [fmt(ad), "sites en adaptation opérationnelle", ad ? "red" : ""],
     [fmt(ve), "sites en veille renforcée"], [fmt(I.length), "incidents (filtres)"], [fmt(graves.length), "incidents graves", graves.length ? "red" : ""],
     [fmt(tues), "tués", tues ? "red" : ""], [fmt(bl), "blessés"], [isFinite(gmin) ? fmt(gmin, 1) + " km" : "—", "grave le plus proche d’un site"]];
   $("#cards").innerHTML = cards.map(([v, l, c]) => `<div class="card ${c || ""}"><b>${v}</b><span>${l}</span></div>`).join("");
@@ -615,7 +618,7 @@ function renderSynthese() {
   const dates = I.map(i => i.date).filter(Boolean).sort();
   const periodTxt = state.d0 || state.d1 ? `Du ${frDate(state.d0 || dates[0])} au ${frDate(state.d1 || dates[dates.length - 1])}` : dates.length ? `Du ${frDate(dates[0])} au ${frDate(dates[dates.length - 1])}` : "Sur la période";
   $("#lecture").innerHTML = !INC.length ? `Aucun incident n’est chargé : tous les sites sont au niveau « Normal ». Importez la base sécuritaire de la période dans l’onglet <b>Sécurité</b> (ou cochez la base Mali) pour évaluer les sites et les régions.` :
-    `${periodTxt} : <b>${n ? Math.round(100 * na / n) : 0} %</b> des sites fonctionnent en conditions Normal ou Attention. <b>${ad}</b> site(s) en adaptation opérationnelle${adNames.length ? ` (${adNames.map(esc).join(", ")})` : ""} et <b>${ve}</b> en veille renforcée. ${fmt(I.length)} incident(s) localisé(s), dont ${graves.length} grave(s)${active.length ? ` ; régions les plus actives : ${active.map(r => `${esc(r.name)} (${r.inc})`).join(", ")}` : ""}.${gsite ? ` Grave le plus proche d’un site : <b>${fmt(gmin, 1)} km</b> (${esc(gsite.nom)}, ${esc((gsite.ville || "").split("/")[0])}).` : ""}`;
+    `${periodTxt} : <b>${n ? pct(na, n) : 0} %</b> des sites fonctionnent en conditions Normal ou Attention. <b>${ad}</b> site(s) en adaptation opérationnelle${adNames.length ? ` (${adNames.map(esc).join(", ")})` : ""} et <b>${ve}</b> en veille renforcée. ${fmt(I.length)} incident(s) localisé(s), dont ${graves.length} grave(s)${active.length ? ` ; régions les plus actives : ${active.map(r => `${esc(r.name)} (${r.inc})`).join(", ")}` : ""}.${gsite ? ` Grave le plus proche d’un site : <b>${fmt(gmin, 1)} km</b> (${esc(gsite.nom)}, ${esc((gsite.ville || "").split("/")[0])})${ginc.prec && !/GPS/.test(ginc.prec) ? ", position de l’incident estimée" : ""}.` : ""}`;
   $("#by-country").innerHTML = `<thead><tr><th>Pays</th><th>Sites</th><th>Adapt.</th><th>Veille</th><th>Incidents</th></tr></thead><tbody>` + ["BFA", "MLI", "NER"].map(iso => { const s = S.filter(x => x.iso === iso), i = I.filter(x => x.iso === iso); return `<tr class="click" data-iso="${iso}"><td><b>${COUNTRY[iso]}</b></td><td class="num">${fmt(s.length)}${!SITES.some(x => x.iso === iso) ? ` <span class="note">à importer</span>` : ""}</td><td class="num crit">${s.filter(x => postOf(x) === "adapt").length || "·"}</td><td class="num warn">${s.filter(x => postOf(x) === "veille").length || "·"}</td><td class="num">${i.length || "·"}</td></tr>`; }).join("") + "</tbody>";
   $("#by-country tbody").onclick = e => { const tr = e.target.closest("tr[data-iso]"); if (!tr) return; state.iso = tr.dataset.iso; state.reg = state.prov = ""; $("#f-iso").value = state.iso; refreshFilterOptions(); update(); fitFilter(); };
   const top = regs.sort((a, b) => regionLevel(b) - regionLevel(a) || (b.adapt || 0) - (a.adapt || 0) || (b.inc || 0) - (a.inc || 0) || b.sites - a.sites).slice(0, 8);
@@ -690,7 +693,8 @@ function importIncidents(rows, name) {
     const tues = num(pick(o, /^tues?$/, /morts?/, /^killed/, /deces/)) || 0, bl = num(pick(o, /^blesses?/, /injur/)) || 0;
     const gv = norm(pick(o, /^grav/, /^grave$/, /severit/) ?? "");
     const grave = gv ? /oui|yes|grave|eleve|haut|critique|majeur|^1$|true/.test(gv) : tues >= 1 || bl >= 3 || TYPE_GRAVE.test(type);
-    return { id: `IMP-${k + 1}`, lat, lon, date: parseDate(pick(o, /^date/)), type, grave, tues, blesses: bl, localite: String(pick(o, /localit/, /^lieu/, /^ville/, /^place/) ?? ""),
+    const prec = String(pick(o, /^precision/) ?? "");
+    return { id: String(pick(o, /^id_incident$/, /^id$/) ?? `IMP-${k + 1}`), lat, lon, date: parseDate(pick(o, /^date/)), type, grave, tues, blesses: bl, prec, approx: /province|chef-lieu|commune/i.test(prec), localite: String(pick(o, /localit/, /^lieu/, /^ville/, /^place/) ?? ""),
       auteur: String(pick(o, /auteur/, /acteur/, /actor/) ?? ""), description: String(pick(o, /^desc/, /detail/, /resume/) ?? ""), source: String(pick(o, /^source/) ?? name), ...geocode(lat, lon) };
   }).filter(Boolean);
   IMP_INC = out; const saved = store.set("ss-inc", IMP_INC);
@@ -721,7 +725,7 @@ function initImportExport() {
   $("#use-mali").checked = state.useMali; $("#n-mali").textContent = MALI_INC.length;
   $("#use-mali").onchange = e => { state.useMali = e.target.checked; store.set("ss-mali", state.useMali); rebuild(); setPeriod("all"); refreshFilterOptions(); recompute(); };
   $("#tpl-inc").onclick = () => xlsxDownload([["Incidents", [{ date: "2026-10-18", lat: 12.37, lon: -1.52, type: "Attaque", gravite: "grave", tues: 2, blesses: 1, localite: "Exemple (à remplacer)", region: "", auteur: "", description: "Ligne d’exemple : supprimez-la avant l’import.", source: "" }]]], "modele_import_incidents.xlsx");
-  $("#exp-inc").onclick = () => xlsxDownload([["Incidents", incF().map(i => ({ Date: i.date, Type: i.type, Grave: i.grave ? "oui" : "non", Tués: i.tues || 0, Blessés: i.blesses || 0, Localité: i.localite, Pays: COUNTRY[i.iso] || "", Région: i.region, Province: i.province, Latitude: i.lat, Longitude: i.lon, Auteur: i.auteur || "", Description: i.description || "", Source: i.source || "" }))]], `incidents_${iso2(new Date())}.xlsx`);
+  $("#exp-inc").onclick = () => xlsxDownload([["Incidents", incF().map(i => ({ Date: i.date, Type: i.type, Grave: i.grave ? "oui" : "non", Tués: i.tues || 0, Blessés: i.blesses || 0, Localité: i.localite, Pays: COUNTRY[i.iso] || "", Région: i.region, Province: i.province, Latitude: i.lat, Longitude: i.lon, Auteur: i.auteur || "", Description: i.description || "", Source: i.source || "", "Précision de la position": i.prec || "" }))]], `incidents_${iso2(new Date())}.xlsx`);
   $("#exp-eval").onclick = () => {
     const RS = regionStats();
     const regs = Object.entries(RS).filter(([k]) => k.split("|")[1]).map(([k, v]) => ({ Pays: COUNTRY[k.split("|")[0]] || "", Région: k.split("|")[1], Sites: v.sites || 0, "Sites en adaptation": v.adapt || 0, "Sites en veille": v.veille || 0, Incidents: v.inc || 0, Graves: v.grave || 0, Tués: v.tues || 0, Niveau: LEVELS[regionLevel(v)][0] }));
@@ -731,7 +735,7 @@ function initImportExport() {
   ["r1", "r2", "r3"].forEach(k => $("#" + k).onchange = e => { state[k] = Math.max(1, +e.target.value || state[k]); recompute(); });
 }
 function renderSecurity() {
-  $("#rules-txt").textContent = `Adaptation opérationnelle : incident grave à ${state.r1} km ou moins, ou 3 incidents dans ce rayon. Veille renforcée : grave à ${state.r2} km ou moins, ou 2 incidents. Attention : au moins un incident à ${state.r3} km ou moins. Sinon : Normal.`;
+  $("#rules-txt").textContent = `Adaptation opérationnelle : incident grave à ${state.r1} km ou moins, ou 3 incidents dans ce rayon. Veille renforcée : grave à ${state.r2} km ou moins, ou 2 incidents. Attention : au moins un incident à ${state.r3} km ou moins. Sinon : Normal. Les incidents à position approximative (commune ou province) ne font passer un site qu’en « Attention ».`;
   const RS = regionStats(), regs = Object.entries(RS).filter(([k]) => k.split("|")[1]).map(([k, v]) => ({ iso: k.split("|")[0], name: k.split("|")[1], ...v })).sort((a, b) => regionLevel(b) - regionLevel(a) || (b.inc || 0) - (a.inc || 0) || (b.sites || 0) - (a.sites || 0));
   $("#reg-eval").innerHTML = `<thead><tr><th>Région</th><th>Sites</th><th>Inc. / graves</th><th>Niveau</th></tr></thead><tbody>` + (regs.map(r => `<tr class="click" data-iso="${r.iso}" data-r="${esc(r.name)}"><td>${esc(r.name)} <span class="note">${r.iso}</span></td><td class="num">${fmt(r.sites || 0)}${r.adapt ? ` <span class="crit">· ${r.adapt} adapt.</span>` : ""}</td><td class="num">${r.inc || 0} / ${r.grave || 0}</td><td><span class="lvl" style="--c:var(${LEVELS[regionLevel(r)][1]})">${LEVELS[regionLevel(r)][0]}</span></td></tr>`).join("") || `<tr><td colspan="4" class="note">Aucune donnée.</td></tr>`) + "</tbody>";
   $("#reg-eval tbody").onclick = e => { const tr = e.target.closest("tr[data-r]"); if (!tr) return; state.iso = tr.dataset.iso; state.reg = tr.dataset.r; state.prov = ""; $("#f-iso").value = state.iso; refreshFilterOptions(); update(); fitFilter(); };
@@ -801,7 +805,8 @@ function analyseRoute(rt, buf) {
   const step = Math.max(5, total / 60), segs = [];
   for (let a = 0; a < total; a += step) {
     const b = Math.min(total, a + step), here = incs.filter(x => x.at >= a - buf && x.at <= b + buf);
-    const lvl = here.some(x => x.i.grave && x.d <= buf) ? 3 : here.length >= 2 ? 2 : here.length ? 1 : 0;
+    const exact = here.filter(x => !x.i.approx);
+    const lvl = exact.some(x => x.i.grave) ? 3 : exact.length >= 2 ? 2 : here.length ? 1 : 0;
     const pts = []; for (let i = 0; i < P.length; i++) { if (cum[i] >= a && cum[i] <= b) pts.push(P[i]); }
     const i0 = cum.findIndex(c => c >= a), i1 = cum.findIndex(c => c >= b);
     segs.push({ a, b, lvl, pts: P.slice(Math.max(0, i0 - 1), (i1 < 0 ? P.length : i1) + 1) });

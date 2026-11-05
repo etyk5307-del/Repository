@@ -13,6 +13,7 @@ Le dossier géo doit contenir : ne_10m_admin_0_countries, ne_10m_admin_1_states_
 ne_10m_roads, rivers, ne_10m_lakes (Natural Earth) et bfa_/mli_/ner_ ADM1/ADM2 (geoBoundaries).
 """
 import json
+import re
 import math
 import shutil
 import sys
@@ -29,13 +30,35 @@ DIST = HERE / "dist"
 COUNTRIES = {"BFA": "Burkina Faso", "MLI": "Mali", "NER": "Niger"}
 BBOX = box(-20.0, 2.0, 26.0, 30.0)
 
-# Burkina : anciennes régions (geoBoundaries) -> régions de la réforme de 2025.
-BFA_REGION = {
-    "Centre": "Kadiogo", "Centre-Nord": "Koulsé", "Centre-Ouest": "Nando", "Boucle du Mouhoun": "Bankui",
-    "Hauts-Bassins": "Guiriko", "Centre-Est": "Nakanbé", "Centre-Sud": "Nazinon", "Plateau Central": "Oubri",
-    "Cascades": "Tannounyan", "Est": "Goulmou", "Nord": "Yaadga", "Sahel": "Liptako", "Sud-Ouest": "Djôrô",
-}
 MLI_FR = {"Segou": "Ségou", "Koulikouro": "Koulikoro"}
+
+# Burkina : provinces -> 17 régions de la réforme de 2025 (graphie des bulletins de sûreté).
+# Rattachements à confirmer : Kompienga (Goulmou), Oudalan (Soum), Nayala (Sourou).
+PROV_REGION_2025 = {
+    "BALE": "Bankui", "BANWA": "Bankui", "MOUHOUN": "Bankui", "SOUROU": "Sourou", "NAYALA": "Sourou", "KOSSI": "Koosin",
+    "BOUGOURIBA": "Djôrô", "IOBA": "Djôrô", "NOUMBIEL": "Djôrô", "PONI": "Djôrô", "GOURMA": "Goulmou", "KOMPIENGA": "Goulmou",
+    "GNAGNA": "Sirba", "KOMANDJARI": "Sirba", "KOMONJDJARI": "Sirba", "TAPOA": "Tapoa", "HOUET": "Guiriko", "KENEDOUGOU": "Guiriko",
+    "TUY": "Guiriko", "KADIOGO": "Kadiogo", "BAM": "Koulsé", "NAMENTENGA": "Koulsé", "SANMATENGA": "Koulsé", "SENO": "Liptako",
+    "YAGHA": "Liptako", "SOUM": "Soum", "OUDALAN": "Soum", "BOULGOU": "Nakambé", "KOULPELOGO": "Nakambé", "KOURITENGA": "Nakambé",
+    "BOULKIEMDE": "Nando", "SANGUIE": "Nando", "SISSILI": "Nando", "ZIRO": "Nando", "BAZEGA": "Nazinon", "NAHOURI": "Nazinon",
+    "ZOUNDWEOGO": "Nazinon", "GANZOURGOU": "Oubri", "KOURWEOGO": "Oubri", "OUBRITENGA": "Oubri", "COMOE": "Tannounyan",
+    "LERABA": "Tannounyan", "LOROUM": "Yaadga", "PASSORE": "Yaadga", "YATENGA": "Yaadga", "ZONDOMA": "Yaadga",
+}
+
+
+def pkey(name):
+    import unicodedata
+    return " ".join(re.sub(r"[^A-Z0-9 ]", " ", unicodedata.normalize("NFD", str(name)).encode("ascii", "ignore").decode().upper()).split())
+
+
+def bfa_regions_2025(src):
+    """Régions du Burkina reconstituées par fusion des provinces (geoBoundaries ADM2)."""
+    groups = {}
+    for f in load(src, "bfa_ADM2.geojson")["features"]:
+        reg = PROV_REGION_2025.get(pkey(f["properties"]["shapeName"]))
+        if reg:
+            groups.setdefault(reg, []).append(shape(f["geometry"]).buffer(0))
+    return [(name, unary_union(gs).buffer(0.0005).buffer(-0.0005)) for name, gs in sorted(groups.items())]
 GENERIC_POINT = (12.355807, -1.520662)  # coordonnées attribuées à plusieurs sites de villes différentes
 
 # Colonnes publiées sur le site (aucune donnée de contact ni identifiant de connexion).
@@ -58,8 +81,8 @@ def admin(src):
     a0 = {f["properties"]["ADM0_A3"]: shape(f["geometry"]) for f in load(src, "ne_10m_admin_0_countries.geojson")["features"]
           if f["properties"]["ADM0_A3"] in COUNTRIES}
     reg, sub = [], []
-    for f in load(src, "bfa_ADM1.geojson")["features"]:
-        reg.append(("BFA", BFA_REGION.get(f["properties"]["shapeName"], f["properties"]["shapeName"]), shape(f["geometry"])))
+    for name, g in bfa_regions_2025(src):
+        reg.append(("BFA", name, g))
     for f in load(src, "gb_ADM1.geojson")["features"]:
         reg.append(("MLI", MLI_FR.get(f["properties"]["shapeName"], f["properties"]["shapeName"]), shape(f["geometry"])))
     for f in load(src, "ne_10m_admin_1_states_provinces.geojson")["features"]:
