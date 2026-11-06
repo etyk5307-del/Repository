@@ -1,0 +1,902 @@
+<title>Observatoire Sécuritaire Mali</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Mise en page : salle de situation — bandeau, filtres collants, carte opérationnelle + panneau latéral, grille analytique, évaluation. */
+:root {
+  --bg: #e9edf1; --surface: #ffffff; --surface-2: #f2f5f8; --ink: #13202c; --muted: #566577; --faint: #8794a3;
+  --line: #d3dbe3; --accent: #0f7c86; --accent-ink: #ffffff;
+  --map-bg: #cfd9e2; --land: #e7e2d6; --mali: #f6f2e8; --border: #6f7c88; --adm: #9aa6b2; --river: #4f8fc0; --road: #b49a6e;
+  --a-jnim: #dc4a26; --a-eis: #8a4fd6; --a-fla: #d69a12; --a-state: #2f6fb5; --a-unk: #7d8a97;
+  --sev-crit: #c8102e; --sev-high: #e2701c; --sev-mod: #d1a20f; --sev-low: #4f8a3c;
+  --f-display: "Barlow Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b1218; --surface: #111b24; --surface-2: #17232e; --ink: #e3eaf0; --muted: #94a3b2; --faint: #66778a;
+  --line: #233342; --accent: #3cb7c1; --accent-ink: #071216;
+  --map-bg: #081017; --land: #18232c; --mali: #22303b; --border: #8b9bab; --adm: #50637a; --river: #3f86c4; --road: #8a7550;
+  --a-jnim: #f0643c; --a-eis: #a979ee; --a-fla: #e8b33a; --a-state: #5b97da; --a-unk: #8e9baa;
+  --sev-crit: #ff4d5e; --sev-high: #ff8f3d; --sev-mod: #f0c43a; --sev-low: #74b55b;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0b1218; --surface: #111b24; --surface-2: #17232e; --ink: #e3eaf0; --muted: #94a3b2; --faint: #66778a;
+  --line: #233342; --accent: #3cb7c1; --accent-ink: #071216;
+  --map-bg: #081017; --land: #18232c; --mali: #22303b; --border: #8b9bab; --adm: #50637a; --river: #3f86c4; --road: #8a7550;
+  --a-jnim: #f0643c; --a-eis: #a979ee; --a-fla: #e8b33a; --a-state: #5b97da; --a-unk: #8e9baa;
+  --sev-crit: #ff4d5e; --sev-high: #ff8f3d; --sev-mod: #f0c43a; --sev-low: #74b55b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 50; background: var(--surface); }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1560px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.08rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Bandeau */
+.masthead { background: var(--surface); border-bottom: 1px solid var(--line); }
+.masthead .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; padding-block: 18px 14px; }
+.masthead h1 { font-size: clamp(1.6rem, 3.2vw, 2.4rem); font-weight: 700; line-height: 1.05; }
+.masthead h1 span { color: var(--muted); font-weight: 500; }
+.mh-right { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.classif { font-family: var(--f-mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; padding: 4px 8px; border: 1px solid var(--sev-high); color: var(--sev-high); border-radius: 3px; }
+.btn { border: 1px solid var(--line); background: var(--surface-2); padding: 6px 11px; border-radius: var(--radius); cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* Filtres */
+.filters { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.filters .wrap { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding-block: 10px; }
+.fgroup { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fgroup > label, .flabel { font-family: var(--f-mono); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.fgroup input[type=date], .fgroup select, .search { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 8px; min-width: 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface-2); padding: 4px 10px; border-radius: 999px; cursor: pointer; font-size: .82rem; }
+.chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.chip[aria-pressed="false"] { opacity: .45; }
+.chip[aria-pressed="false"] .dot { background: transparent; border: 1.5px solid var(--c); }
+.count { margin-left: auto; font-family: var(--f-mono); font-size: .8rem; color: var(--muted); }
+.count b { color: var(--ink); font-size: 1rem; }
+
+/* BLUF */
+.bluf { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin-block: 20px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.bluf header { padding: 14px 18px 4px; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.bluf ol { list-style: none; margin: 0; padding: 6px 18px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 22px; }
+.bluf li { border-left: 3px solid var(--sev); padding-left: 12px; min-width: 0; }
+.bluf li b { display: block; font-family: var(--f-display); font-size: 1.02rem; font-weight: 600; margin-bottom: 2px; }
+.bluf li span { color: var(--muted); font-size: .88rem; }
+
+/* KPI */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.kpi { background: var(--surface); padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
+.kpi .v { font-family: var(--f-display); font-size: 2rem; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: .9rem; color: var(--muted); font-weight: 500; }
+.kpi .d { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); }
+.kpi .d .up { color: var(--sev-crit); } .kpi .d .down { color: var(--sev-low); } .kpi .d .eq { color: var(--muted); }
+.kpi.k-state .v { color: var(--a-state); } .kpi.k-civ .v { color: var(--sev-crit); } .kpi.k-ga .v { color: var(--a-jnim); }
+
+/* Section */
+section.block { margin-block: 26px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.sec-head p { color: var(--muted); max-width: 70ch; }
+
+/* Carte */
+.mapgrid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; }
+@media (max-width: 1080px) { .mapgrid { grid-template-columns: minmax(0, 1fr); } }
+.mapbox { position: relative; height: 680px; max-height: 82vh; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--map-bg); }
+@media (max-width: 700px) { .mapbox { height: 520px; } .legend, .attrib, .bigdate { display: none; } }
+#map { position: absolute; inset: 0; }
+.mapctl { position: absolute; z-index: 5; top: 10px; left: 10px; display: grid; gap: 6px; max-width: calc(100% - 20px); }
+.panel { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; }
+.layers { display: flex; flex-wrap: wrap; gap: 4px; max-width: 560px; }
+.ltog { border: 1px solid var(--line); background: var(--surface-2); border-radius: 4px; padding: 3px 8px; font-size: .76rem; cursor: pointer; }
+.ltog[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.legend { position: absolute; z-index: 5; left: 10px; bottom: 92px; font-size: .74rem; display: grid; gap: 4px; }
+.legend .row { display: flex; align-items: center; gap: 6px; }
+.legend .sw { width: 10px; height: 10px; border-radius: 50%; background: var(--c); border: 1px solid var(--surface); }
+.legend .ramp { height: 8px; width: 140px; border-radius: 2px; background: linear-gradient(90deg, var(--sev-low), var(--sev-mod), var(--sev-high), var(--sev-crit)); }
+.timeline { position: absolute; z-index: 5; left: 10px; right: 10px; bottom: 10px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.tl-bars { display: flex; align-items: flex-end; gap: 1px; height: 34px; cursor: pointer; }
+.tl-bars i { flex: 1; background: var(--faint); min-height: 2px; border-radius: 1px 1px 0 0; opacity: .55; }
+.tl-bars i.on { background: var(--accent); opacity: 1; }
+.tl-bars i.cur { background: var(--ink); opacity: 1; }
+.tl-date { font-family: var(--f-mono); font-size: .8rem; min-width: 92px; text-align: right; }
+.bigdate { position: absolute; z-index: 4; top: 12px; right: 14px; font-family: var(--f-display); font-weight: 700; font-size: 2rem; color: var(--ink); opacity: .85; pointer-events: none; text-shadow: 0 1px 0 var(--surface); }
+.attrib { position: absolute; z-index: 4; right: 8px; bottom: 58px; font-size: .64rem; color: var(--muted); pointer-events: none; }
+.deck-tooltip { font-family: var(--f-body) !important; font-size: 12px !important; background: var(--surface) !important; color: var(--ink) !important; border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: 320px; padding: 8px 10px !important; }
+
+.side { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; min-width: 0; max-height: 680px; }
+.side-head { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.side-body { padding: 12px 14px; overflow-y: auto; display: grid; gap: 14px; align-content: start; }
+.hot { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; }
+.hot .bar { grid-column: 1 / -1; height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+.hot .bar i { display: block; height: 100%; background: var(--accent); }
+.feed { display: grid; gap: 6px; }
+.feed button { text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: var(--radius); padding: 7px 9px; cursor: pointer; display: grid; gap: 1px; border-left: 3px solid var(--c); }
+.feed button:hover { border-color: var(--accent); border-left-color: var(--c); }
+.feed small { color: var(--muted); font-family: var(--f-mono); font-size: .7rem; }
+.det h3 { font-size: 1.25rem; }
+.det .meta { color: var(--muted); font-size: .82rem; }
+.det .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.det .grid div { background: var(--surface-2); padding: 6px 8px; }
+.det .grid b { display: block; font-family: var(--f-display); font-size: 1.25rem; }
+.det .grid span { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.kv { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 4px 10px; font-size: .84rem; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.pill { display: inline-block; font-family: var(--f-mono); font-size: .68rem; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.src { display: inline-flex; gap: 4px; align-items: center; font-size: .75rem; border-radius: 4px; padding: 2px 6px; background: var(--surface-2); border: 1px solid var(--line); margin: 0 4px 4px 0; }
+.src i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+
+/* Graphiques */
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 14px 8px; min-width: 0; display: grid; gap: 6px; align-content: start; }
+.card.wide { grid-column: 1 / -1; }
+.card .sub { color: var(--muted); font-size: .82rem; }
+.chart { width: 100%; height: 300px; }
+.chart.tall { height: 380px; }
+
+/* Indice de menace */
+.threat { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.threat th { text-align: left; font-family: var(--f-mono); font-weight: 500; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.threat td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.threat td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.score { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+.score .b { flex: 1; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.score .b i { display: block; height: 100%; background: var(--c); }
+.lvl { color: var(--c); }
+.tablewrap { overflow-x: auto; }
+
+/* Évaluation */
+.assess { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .assess { grid-template-columns: minmax(0, 1fr); } }
+.prose { display: grid; gap: 10px; max-width: 75ch; }
+.prose p, .prose li { color: var(--ink); }
+.prose ul, .prose ol { margin: 0; padding-left: 1.1rem; display: grid; gap: 6px; }
+.kj { counter-reset: kj; list-style: none; padding: 0 !important; }
+.kj li { counter-increment: kj; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; }
+.kj li::before { content: "JC" counter(kj); font-family: var(--f-mono); font-size: .72rem; color: var(--accent); padding-top: 3px; }
+.conf { font-family: var(--f-mono); font-size: .7rem; color: var(--muted); }
+.actors { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.actor { border-top: 3px solid var(--c); background: var(--surface); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: 0 0 var(--radius) var(--radius); padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+.actor .stats { font-family: var(--f-mono); font-size: .74rem; color: var(--muted); }
+.scen { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.scen .card { border-top: 3px solid var(--c); }
+.prob { font-family: var(--f-display); font-size: 1.5rem; font-weight: 700; color: var(--c); }
+.reco { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.reco ol { margin: 0; padding-left: 1.1rem; display: grid; gap: 7px; }
+.reco li em { font-style: normal; font-family: var(--f-mono); font-size: .68rem; color: var(--accent); margin-right: 4px; }
+.iw { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.iw td, .iw th { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.iw th { font-family: var(--f-mono); font-weight: 500; font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+/* Table incidents */
+.inc { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 980px; }
+.inc th { position: sticky; top: 0; background: var(--surface); text-align: left; font-family: var(--f-mono); font-weight: 500; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--line); cursor: pointer; white-space: nowrap; }
+.inc th[aria-sort="ascending"]::after { content: " ▲"; } .inc th[aria-sort="descending"]::after { content: " ▼"; }
+.inc td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.inc tr { cursor: pointer; }
+.inc tbody tr:hover td { background: var(--surface-2); }
+.inc .a { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.inc .a i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.tbl-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); max-height: 560px; overflow: auto; }
+footer { border-top: 1px solid var(--line); margin-top: 30px; padding-block: 18px 30px; color: var(--muted); font-size: .8rem; }
+footer .wrap { display: grid; gap: 8px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Observatoire sécuritaire · Mali &amp; Sahel central</div>
+      <h1>Mali — situation sécuritaire <span id="period-label">31 août – 26 oct. 2026</span></h1>
+    </div>
+    <div class="mh-right">
+      <span class="classif">Sources ouvertes · Diffusion restreinte</span>
+      <span class="eyebrow" id="gen-label"></span>
+      <button class="btn" id="theme-btn" type="button" aria-label="Basculer le thème clair ou sombre">Thème</button>
+    </div>
+  </div>
+</header>
+
+<nav class="filters" aria-label="Filtres">
+  <div class="wrap">
+    <div class="fgroup">
+      <label for="f-from">Du</label><input type="date" id="f-from">
+      <label for="f-to">au</label><input type="date" id="f-to">
+    </div>
+    <div class="fgroup" id="f-actors" role="group" aria-label="Acteur instigateur"><span class="flabel">Acteur</span></div>
+    <div class="fgroup">
+      <label for="f-mode">Mode</label><select id="f-mode"><option value="all">Tous</option></select>
+    </div>
+    <div class="fgroup">
+      <label for="f-region">Région</label><select id="f-region"><option value="all">Toutes</option></select>
+    </div>
+    <div class="fgroup">
+      <label for="f-rel">Fiabilité</label>
+      <select id="f-rel">
+        <option value="all">Toutes</option>
+        <option value="corr">Corroboré au moins partiellement</option>
+        <option value="Corroboré">Corroboré uniquement</option>
+      </select>
+    </div>
+    <button class="chip" id="f-civ" type="button" aria-pressed="false"><span class="dot" style="--c: var(--sev-crit)"></span>Victimes civiles</button>
+    <button class="btn" id="f-reset" type="button">Réinitialiser</button>
+    <div class="count" aria-live="polite"><b id="count-n">36</b> incidents retenus</div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="bluf" aria-labelledby="bluf-h">
+    <header><h2 id="bluf-h">L’essentiel</h2><span class="eyebrow">Évaluation sur l’ensemble de la période · 36 incidents</span></header>
+    <ol>
+      <li style="--sev: var(--sev-crit)"><b>Le JNIM mène l’initiative.</b><span>21 des 36 incidents (58 %), dont 16 dans les régions de Ségou et Mopti. Il est à l’origine de 92 % des FDS maliennes tuées (192 sur 208).</span></li>
+      <li style="--sev: var(--sev-crit)"><b>La pression se rapproche de Bamako.</b><span>9 incidents à moins de 300 km de la capitale, dont un poste militaire pris à Kassela, à 32 km. Six attaques ciblent des axes routiers, ce qui est cohérent avec une stratégie d’asphyxie logistique.</span></li>
+      <li style="--sev: var(--sev-high)"><b>Les frappes aériennes causent toutes les morts civiles recensées.</b><span>28 civils tués sur 28 lors de quatre frappes FAMa / Africa Corps. Ce nombre a triplé entre les deux périodes (7, puis 21) et alimente le recrutement adverse.</span></li>
+      <li style="--sev: var(--sev-high)"><b>La guerre JNIM–EI-Sahel saigne le Liptako.</b><span>Deux batailles revendiquées totalisent 600 tués, soit 64 % de la létalité de la base. Ces bilans restent à confirmer, avec un risque de double comptage.</span></li>
+    </ol>
+  </section>
+
+  <div class="kpis" id="kpis" aria-label="Indicateurs clés"></div>
+
+  <section class="block" aria-labelledby="map-h">
+    <div class="sec-head">
+      <h2 id="map-h">Cartographie opérationnelle</h2>
+      <p>Cliquez un incident pour son dossier. Activez la chaleur, les hexagones 3D ou l’indice de menace régional, puis lancez la lecture chronologique.</p>
+    </div>
+    <div class="mapgrid">
+      <div class="mapbox">
+        <div id="map" aria-label="Carte des incidents"></div>
+        <div class="mapctl">
+          <div class="panel layers" id="layers" role="group" aria-label="Couches cartographiques"></div>
+        </div>
+        <div class="bigdate" id="bigdate" hidden></div>
+        <div class="legend panel" id="legend"></div>
+        <div class="attrib">Fonds : geoBoundaries (CC BY 4.0) · Natural Earth</div>
+        <div class="timeline panel">
+          <button class="btn primary" id="play" type="button" aria-label="Lancer la lecture chronologique">▶ Lecture</button>
+          <div class="tl-bars" id="tl-bars" role="slider" aria-label="Chronologie" tabindex="0"></div>
+          <div class="tl-date" id="tl-date">Toute la période</div>
+        </div>
+      </div>
+      <aside class="side" aria-live="polite">
+        <div class="side-head"><h3 id="side-title">Foyers et derniers incidents</h3><button class="btn" id="side-close" type="button" hidden>Fermer</button></div>
+        <div class="side-body" id="side-body"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="ana-h">
+    <div class="sec-head"><h2 id="ana-h">Analyse des tendances</h2><p>Tous les graphiques suivent les filtres. Les semaines sont des semaines ISO, du lundi au dimanche.</p></div>
+    <div class="charts">
+      <div class="card"><h3>Rythme opérationnel hebdomadaire</h3><p class="sub">Incidents par acteur instigateur ; la courbe donne le nombre de tués de la semaine</p><div class="chart" id="c-week"></div></div>
+      <div class="card"><h3>Bilan humain par catégorie</h3><p class="sub">Tués par semaine, empilés selon la catégorie de victime</p><div class="chart" id="c-loss"></div></div>
+      <div class="card wide"><h3>Chaîne d’action : qui frappe, comment, qui</h3><p class="sub">Flux acteur instigateur → mode opératoire → cible, pondéré par le nombre d’incidents</p><div class="chart tall" id="c-sankey"></div></div>
+      <div class="card"><h3>Pression sur Bamako</h3><p class="sub">Distance de chaque incident à la capitale ; la taille du point suit le nombre de tués</p><div class="chart" id="c-bamako"></div></div>
+      <div class="card"><h3>Modes opératoires</h3><p class="sub">Fréquence et létalité ; tués en échelle logarithmique</p><div class="chart" id="c-modes"></div></div>
+      <div class="card"><h3>Matrice région × semaine</h3><p class="sub">Nombre d’incidents ; une case sombre signale un foyer actif</p><div class="chart" id="c-matrix"></div></div>
+      <div class="card"><h3>Fiabilité de l’information</h3><p class="sub">Niveau de corroboration indépendante de chaque incident</p><div class="chart" id="c-rel"></div></div>
+      <div class="card wide">
+        <h3>Indice de menace régional</h3>
+        <p class="sub">Score composite de 0 à 100 : fréquence 35 %, létalité (log) 35 %, victimes civiles 15 %, activité récente (21 derniers jours du filtre) 15 %. Il colore aussi la carte.</p>
+        <div class="tablewrap"><table class="threat" id="threat"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="ev-h">
+    <div class="sec-head"><h2 id="ev-h">Évaluation stratégique</h2><p>Jugements établis sur l’ensemble de la base. Le vocabulaire probabiliste suit l’usage du renseignement : « probable » correspond à 55–80 %, « très probable » à plus de 80 %.</p></div>
+    <div class="assess">
+      <div class="card"><h3>Jugements clés</h3>
+        <ol class="prose kj">
+          <li><div>Le JNIM conduit une <b>campagne d’usure méthodique</b> contre les emprises isolées et les axes du Mali central. La prise du camp de Dioura (10/09 : 150 FAMa tués, 93 capturés, 115 véhicules détruits) concentre à elle seule 72 % des pertes FAMa de la période. <span class="conf">Confiance modérée : bilan issu en partie d’AzZalaqa</span></div></li>
+          <li><div>Le groupe <b>resserre l’étau autour de Bamako</b> : Kassela (32 km), l’axe Mourdja–Kaloumba, Ségou–Fana, Dougabougou–Markala. L’incendie de citernes sur l’axe Ségou–Fana et les embuscades de convois relèvent très probablement d’une stratégie de blocus économique de la capitale. <span class="conf">Confiance élevée</span></div></li>
+          <li><div>Un <b>front sud s’ouvre</b> : la prise d’un poste à Kourouma (Sikasso, 07/10, à environ 46 km de la frontière burkinabè) indique une capacité d’action dans le couloir Sikasso–Bobo-Dioulasso, à la porte des États côtiers. <span class="conf">Confiance modérée : un seul événement</span></div></li>
+          <li><div>La <b>rivalité JNIM–EI-Sahel</b> dans le Liptako-Gourma atteint une intensité inédite (200 puis 400 tués revendiqués). L’EI-Sahel s’en sert probablement pour consolider la bande frontalière Gourma–Oudalan–Ménaka. <span class="conf">Confiance faible sur les bilans</span></div></li>
+          <li><div>Les FAMa et Africa Corps ont repris l’<b>initiative au nord</b> avec la reprise de Kidal (10/10). Le prix en est une <b>attrition aérienne</b> (un hélicoptère, un drone MALE Orion, un drone Molniya-2 abattu, des drones endommagés à Sévaré) et une hausse des victimes civiles des frappes. Le FLA conserve, de façon très probable, une capacité de harcèlement par drones FPV. <span class="conf">Confiance modérée</span></div></li>
+          <li><div>Les <b>dommages civils</b> des frappes (Guèllèdjè, Tieri, Nzanakoro, Tombouctou) constituent le principal risque stratégique pour l’État. Ils nourrissent le récit du JNIM auprès des communautés peules et nomades, et donc son recrutement. <span class="conf">Confiance élevée</span></div></li>
+        </ol>
+      </div>
+      <div class="card"><h3>Dynamiques par acteur</h3>
+        <div class="actors" id="actor-cards"></div>
+      </div>
+    </div>
+
+    <h3 style="margin: 22px 0 10px">Scénarios à 30–60 jours (horizon fin décembre 2026)</h3>
+    <div class="scen">
+      <div class="card" style="--c: var(--sev-high)"><span class="eyebrow">Le plus probable</span><div class="prob">55–65 %</div><h3>Usure prolongée au centre</h3><p>Le JNIM maintient un rythme de 3 à 5 incidents par semaine dans les régions de Ségou et Mopti : embuscades, EEI et attaques de postes isolés. Il poursuit les entraves aux convois vers Bamako. Les FAMa et Africa Corps consolident Kidal et intensifient les frappes, et les dommages civils restent récurrents.</p></div>
+      <div class="card" style="--c: var(--sev-crit)"><span class="eyebrow">Le plus dangereux</span><div class="prob">15–25 %</div><h3>Coup d’éclat contre un centre névralgique</h3><p>Une attaque complexe frappe une emprise majeure (type Dioura ou Sévaré) ou la périphérie de Bamako (cercle de Kati), avec tirs indirects ou drones. Elle s’accompagne d’un durcissement du blocus des axes et d’une montée en puissance du front sud (Sikasso, frontières burkinabè et ivoirienne).</p></div>
+      <div class="card" style="--c: var(--a-eis)"><span class="eyebrow">Alternatif</span><div class="prob">≈ 20 %</div><h3>Poussée de l’EI-Sahel à l’est</h3><p>L’EI-Sahel exploite l’affaiblissement local du JNIM pour s’étendre vers Ménaka, Ansongo et Tessit et dans le Gourma. Il multiplie les embuscades contre les convois FAMa pendant que le FLA mène une guérilla par drones au nord.</p></div>
+    </div>
+
+    <div class="assess" style="margin-top: 14px">
+      <div class="card"><h3>Indicateurs d’alerte à surveiller</h3>
+        <div class="tablewrap"><table class="iw">
+          <thead><tr><th>Indicateur</th><th>Ce qu’il signalerait</th><th>Zone</th></tr></thead>
+          <tbody>
+            <tr><td>Nouvelles attaques de citernes ou de convois commerciaux</td><td>Durcissement du blocus logistique de Bamako</td><td>Ségou–Fana, Markala, axes d’entrée de Bamako</td></tr>
+            <tr><td>Incidents dans les cercles de Kati, Kolokani ou Banamba</td><td>Encerclement rapproché de la capitale</td><td>Koulikoro</td></tr>
+            <tr><td>Tirs indirects ou drones contre aéroports et bases</td><td>Ciblage du capacitaire aérien et ISR</td><td>Sévaré, Gao, Tombouctou, Kidal</td></tr>
+            <tr><td>Usage de drones FPV par le JNIM</td><td>Diffusion technologique depuis le FLA</td><td>Centre et Nord</td></tr>
+            <tr><td>Attaques de postes au sud de Sikasso</td><td>Ouverture d’un couloir vers le Golfe de Guinée</td><td>Kadiolo, Kourouma, frontières BF et CI</td></tr>
+            <tr><td>Revendications de l’EI-Sahel à Ménaka ou Ansongo</td><td>Expansion de l’EI-Sahel vers l’ouest</td><td>Gao, Ménaka</td></tr>
+            <tr><td>Nouvelles frappes aériennes avec victimes civiles</td><td>Ralliements communautaires et représailles</td><td>Ségou, Mopti, Tombouctou</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card"><h3>Limites et qualité des données</h3>
+        <ul class="prose" id="quality"></ul>
+      </div>
+    </div>
+
+    <h3 style="margin: 22px 0 10px">Recommandations</h3>
+    <div class="reco">
+      <div class="card"><h3>Autorités et forces de défense</h3><ol>
+        <li><em>IMMÉDIAT</em>Sécuriser en priorité les axes Bamako–Ségou–Niono et Ségou–Markala : ouverture d’itinéraire, lutte contre les EEI, escortes à horaires et itinéraires variables.</li>
+        <li><em>IMMÉDIAT</em>Durcir ou regrouper les postes isolés qui se prêtent à un coup de main (scénario Kassela ou Kourouma) et pré-positionner une force de réaction rapide héliportée.</li>
+        <li><em>COURT TERME</em>Déployer une défense anti-drones (brouillage, détection) sur Sévaré, Goundam, Aguelhoc et Kidal, et disperser ou abriter les aéronefs.</li>
+        <li><em>COURT TERME</em>Renforcer l’identification positive des cibles avant frappe, avec un mécanisme d’enquête sur les bavures. C’est une condition d’efficacité de la contre-insurrection.</li>
+        <li><em>MOYEN TERME</em>Exploiter la rivalité JNIM–EI-Sahel par le renseignement (ISR) sur le Liptako, sans provoquer de rapprochement tactique entre les deux groupes.</li>
+      </ol></div>
+      <div class="card"><h3>Partenaires, ONG et entreprises</h3><ol>
+        <li><em>IMMÉDIAT</em>Classer en rouge les axes Niono–Dioura, Ségou–Fana, Dougabougou–Markala, Bandiagara–Douentza et Ansongo–Ménaka. Y circuler de jour uniquement, en convoi, après une évaluation de route la veille.</li>
+        <li><em>IMMÉDIAT</em>Éloigner les implantations des emprises militaires et des aérodromes, cibles de tirs indirects et de drones.</li>
+        <li><em>COURT TERME</em>Prévoir des plans de continuité pour Bamako (stocks de carburant et d’eau, communications satellitaires) et mettre à jour les plans d’évacuation aérienne pour Tombouctou, Gao et Kidal.</li>
+        <li><em>COURT TERME</em>Éviter les points d’accès Starlink collectifs et les rassemblements dans les zones de frappes : la frappe de Guèllèdjè visait un point de connexion.</li>
+      </ol></div>
+      <div class="card"><h3>États du Golfe de Guinée</h3><ol>
+        <li><em>IMMÉDIAT</em>Renforcer la surveillance de la bande Sikasso–Hauts-Bassins–nord ivoirien et ghanéen, car Kourouma signale une poussée du JNIM vers le sud.</li>
+        <li><em>COURT TERME</em>Mettre en place un partage de renseignement sur les flux logistiques transfrontaliers (carburant, motos, intrants explosifs) qui alimentent les EEI.</li>
+        <li><em>MOYEN TERME</em>Investir dans des programmes de cohésion communautaire dans les zones frontalières afin de couper le récit de victimisation exploité après les frappes.</li>
+      </ol></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="tbl-h">
+    <div class="sec-head"><h2 id="tbl-h">Registre des incidents</h2>
+      <div class="fgroup"><label for="q">Recherche</label><input class="search" id="q" type="search" placeholder="Localité, acteur, source…"></div>
+    </div>
+    <div class="tbl-box"><table class="inc" id="inc"></table></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><b>Méthodologie.</b> Base : compilations de Naïm TOURÉ, 36 incidents du 31/08 au 26/10/2026. Chaque incident est rattaché à son pays, sa région et son cercle par jointure spatiale de ses coordonnées WGS84 (EPSG:4326) sur le référentiel geoBoundaries. Ce référentiel compte 8 régions et le district de Bamako et précède la réforme administrative de 2023 ; la région déclarée dans la base reste consultable dans chaque dossier. La période P1 va du 31/08 au 27/09, la période P2 du 28/09 au 26/10.</p>
+    <p><b>Fiabilité.</b> « Corroboré » signifie au moins deux sources indépendantes (veille OSINT ou presse). « Partiellement corroboré » : une seule source indépendante. « Source partisane seule » : uniquement la communication d’un belligérant (AzZalaqa, Amaq, FLA, État-Major). Les bilans revendiqués par un belligérant doivent être lus comme des maximums.</p>
+    <p>Fichiers d’exploitation SIG (GeoJSON, CSV enrichi) dans le dossier <code>dist/</code> du dépôt. Généré le <span id="gen-date"></span>.</p>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<script src="https://unpkg.com/deck.gl@9.0.38/dist.min.js"></script>
+<script>
+const DATA = /*__DATA__*/null;
+(() => {
+"use strict";
+const INC = DATA.incidents, G = DATA.geo, META = DATA.meta;
+const ACTORS = [
+  { key: "JNIM", label: "JNIM", v: "--a-jnim" },
+  { key: "EI-Sahel", label: "EI-Sahel", v: "--a-eis" },
+  { key: "FLA", label: "FLA", v: "--a-fla" },
+  { key: "FAMa / Africa Corps", label: "FAMa / Africa Corps", v: "--a-state" },
+  { key: "Indéterminé / accident", label: "Indéterminé", v: "--a-unk" },
+];
+const ACTOR_VAR = Object.fromEntries(ACTORS.map(a => [a.key, a.v]));
+const REL_COLOR = { "Corroboré": "--sev-low", "Partiellement corroboré": "--sev-mod", "Source partisane seule": "--sev-high", "Source unique": "--sev-crit" };
+const SRC_KIND = { osint: ["Veille OSINT", "--a-state"], "média": ["Presse", "--sev-low"], partisane: ["Partisane", "--a-jnim"], officielle: ["Officielle", "--a-fla"], compilateur: ["Compilateur", "--a-unk"] };
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => n.toLocaleString("fr-FR");
+const DAY = 864e5;
+const toD = s => new Date(s + "T00:00:00Z");
+const fmtD = (s, o = { day: "2-digit", month: "short" }) => toD(s).toLocaleDateString("fr-FR", { ...o, timeZone: "UTC" });
+const isoAdd = (s, n) => new Date(toD(s).getTime() + n * DAY).toISOString().slice(0, 10);
+
+/* ---------- Thème ---------- */
+let T = {};
+function readTokens() {
+  const cs = getComputedStyle(document.documentElement);
+  const names = ["--bg", "--surface", "--surface-2", "--ink", "--muted", "--faint", "--line", "--accent", "--map-bg", "--land", "--mali", "--border", "--adm", "--river", "--road",
+    "--a-jnim", "--a-eis", "--a-fla", "--a-state", "--a-unk", "--sev-crit", "--sev-high", "--sev-mod", "--sev-low"];
+  T = Object.fromEntries(names.map(n => [n, cs.getPropertyValue(n).trim()]));
+}
+const rgb = (hex, a = 255) => { const h = hex.replace("#", ""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), a]; };
+const actorRGB = (a, al = 235) => rgb(T[ACTOR_VAR[a]] || T["--a-unk"], al);
+const isDark = () => rgb(T["--bg"])[0] < 80;
+
+/* ---------- État ---------- */
+const state = { from: META.start, to: META.end, actors: new Set(ACTORS.map(a => a.key)), mode: "all", region: "all", rel: "all", civ: false, q: "" };
+const view = { layers: { points: true, heat: false, hex: false, choro: true, cercles: true, roads: true, rivers: true, rings: true, labels: true }, t: null, selected: null, playing: null, sort: { k: "date", dir: -1 } };
+
+function passes(i, ignoreDate) {
+  if (!ignoreDate && (i.date < state.from || i.date > state.to)) return false;
+  if (!state.actors.has(i.actor)) return false;
+  if (state.mode !== "all" && i.mode !== state.mode) return false;
+  if (state.region !== "all" && i.region !== state.region) return false;
+  if (state.rel === "corr" && !i.reliability.includes("orrobor")) return false;
+  if (state.rel === "Corroboré" && i.reliability !== "Corroboré") return false;
+  if (state.civ && i.civ_k + i.civ_w === 0) return false;
+  return true;
+}
+const filtered = () => INC.filter(i => passes(i));
+const onMap = () => filtered().filter(i => view.t === null || i.date <= view.t);
+const sum = (arr, k) => arr.reduce((s, x) => s + (typeof k === "function" ? k(x) : x[k]), 0);
+
+/* ---------- Filtres ---------- */
+function initFilters() {
+  const fa = $("#f-actors");
+  ACTORS.forEach(a => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.setAttribute("aria-pressed", "true"); b.dataset.k = a.key;
+    b.innerHTML = `<span class="dot" style="--c: var(${a.v})"></span>${a.label}`;
+    b.onclick = () => { state.actors.has(a.key) ? state.actors.delete(a.key) : state.actors.add(a.key); b.setAttribute("aria-pressed", state.actors.has(a.key)); render(); };
+    fa.appendChild(b);
+  });
+  const modes = [...new Set(INC.map(i => i.mode))].sort((a, b) => a.localeCompare(b, "fr"));
+  modes.forEach(m => $("#f-mode").insertAdjacentHTML("beforeend", `<option>${esc(m)}</option>`));
+  const regs = [...new Set(INC.map(i => i.region))].sort((a, b) => a.localeCompare(b, "fr"));
+  regs.forEach(r => $("#f-region").insertAdjacentHTML("beforeend", `<option>${esc(r)}</option>`));
+  const f = $("#f-from"), t = $("#f-to");
+  [f, t].forEach(el => { el.min = META.start; el.max = META.end; });
+  f.value = state.from; t.value = state.to;
+  f.onchange = () => { state.from = f.value || META.start; if (state.from > state.to) state.to = state.from, t.value = state.to; render(); };
+  t.onchange = () => { state.to = t.value || META.end; if (state.to < state.from) state.from = state.to, f.value = state.from; render(); };
+  $("#f-mode").onchange = e => { state.mode = e.target.value; render(); };
+  $("#f-region").onchange = e => { state.region = e.target.value; render(); fitRegion(); };
+  $("#f-rel").onchange = e => { state.rel = e.target.value; render(); };
+  $("#f-civ").onclick = e => { state.civ = !state.civ; e.currentTarget.setAttribute("aria-pressed", state.civ); render(); };
+  $("#f-reset").onclick = () => {
+    Object.assign(state, { from: META.start, to: META.end, actors: new Set(ACTORS.map(a => a.key)), mode: "all", region: "all", rel: "all", civ: false });
+    f.value = state.from; t.value = state.to; $("#f-mode").value = "all"; $("#f-region").value = "all"; $("#f-rel").value = "all";
+    $("#f-civ").setAttribute("aria-pressed", "false"); document.querySelectorAll("#f-actors .chip").forEach(c => c.setAttribute("aria-pressed", "true"));
+    stopPlay(); view.t = null; render(); flyHome();
+  };
+  $("#q").oninput = e => { state.q = e.target.value.toLowerCase(); renderTable(); };
+}
+
+/* ---------- KPI ---------- */
+function renderKPIs(list) {
+  const p1 = list.filter(i => i.period === 1), p2 = list.filter(i => i.period === 2);
+  const delta = (k) => {
+    const a = typeof k === "function" ? sum(p1, k) : sum(p1, k), b = typeof k === "function" ? sum(p2, k) : sum(p2, k);
+    if (!p1.length || !p2.length) return `<span class="eq">P1 ${a} · P2 ${b}</span>`;
+    const cls = b > a ? "up" : b < a ? "down" : "eq", arrow = b > a ? "▲" : b < a ? "▼" : "■";
+    const pct = a ? Math.round((b - a) / a * 100) : null;
+    return `P1 ${fmt(a)} → P2 ${fmt(b)} <span class="${cls}">${arrow}${pct === null ? "" : " " + (pct > 0 ? "+" : "") + pct + " %"}</span>`;
+  };
+  const near = list.filter(i => i.dist_bamako <= 300).length;
+  const tiles = [
+    ["", "Incidents", list.length, delta(() => 1)],
+    ["", "Tués, toutes catégories", sum(list, "killed"), delta("killed")],
+    ["k-state", "FDS maliennes tuées", sum(list, "fama_k"), delta("fama_k")],
+    ["k-state", "Africa Corps tués", sum(list, "ac_k"), delta("ac_k")],
+    ["k-ga", "Combattants armés tués", sum(list, "ga_k"), delta("ga_k")],
+    ["k-civ", "Civils tués", `${sum(list, "civ_k")}<small> · ${sum(list, "civ_w")} blessés</small>`, delta("civ_k")],
+    ["", "Prisonniers / capturés", sum(list, "pow"), delta("pow")],
+    ["", "Véhicules et aéronefs", `${sum(list, "veh_d")}<small> détr. · ${sum(list, "veh_s")} saisis</small>`, delta("veh_d")],
+    ["", "Incidents à ≤ 300 km de Bamako", near, delta(i => i.dist_bamako <= 300 ? 1 : 0)],
+  ];
+  $("#kpis").innerHTML = tiles.map(([c, l, v, d]) => `<div class="kpi ${c}"><span class="eyebrow">${l}</span><span class="v">${typeof v === "number" ? fmt(v) : v}</span><span class="d">${d}</span></div>`).join("");
+}
+
+/* ---------- Carte ---------- */
+let deckgl = null, viewState = null;
+const HOME = () => {
+  const w = $("#map").clientWidth;
+  return { longitude: -3.6, latitude: 16.6, zoom: w < 520 ? 4.15 : w < 900 ? 4.7 : 5.05, pitch: view.layers.hex ? 45 : 0, bearing: view.layers.hex ? -12 : 0 };
+};
+function circle(lat, lon, km, n = 96) {
+  const pts = [];
+  for (let k = 0; k <= n; k++) {
+    const a = k / n * 2 * Math.PI, dLat = km / 111.32 * Math.cos(a), dLon = km / (111.32 * Math.cos(lat * Math.PI / 180)) * Math.sin(a);
+    pts.push([lon + dLon, lat + dLat]);
+  }
+  return pts;
+}
+const RINGS = [50, 150, 300].map(km => ({ km, path: circle(META.bamako.lat, META.bamako.lon, km) }));
+const centroid = f => { // centre de la boîte englobante du plus grand anneau
+  let best = null, area = -1;
+  const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+  polys.forEach(p => { const xs = p[0].map(c => c[0]), ys = p[0].map(c => c[1]); const a = (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)); if (a > area) { area = a; best = [(Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...ys) + Math.min(...ys)) / 2]; } });
+  return best;
+};
+const REGION_LABELS = G.adm1.features.map(f => ({ name: f.properties.name.toUpperCase(), pos: f.properties.name === "Bamako" ? null : centroid(f) })).filter(r => r.pos);
+REGION_LABELS.forEach(r => { if (r.name === "KOULIKORO") r.pos = [-7.6, 14.2]; if (r.name === "TOMBOUCTOU") r.pos = [-3.6, 20.4]; if (r.name === "GAO") r.pos = [0.9, 16.4]; });
+const CHARSET = [...new Set((G.towns.map(t => t.name).join("") + REGION_LABELS.map(r => r.name).join("") + "0123456789 kmBAMKOZONEDESTROISFRONTIÈRES·–-'()").split(""))];
+
+let threatCache = {};
+function computeThreat(list) {
+  const regions = {};
+  const end = state.to, recentFrom = isoAdd(end, -20);
+  list.forEach(i => { const r = regions[i.region] ||= { region: i.region, n: 0, killed: 0, civ: 0, recent: 0, fama: 0, actors: {} }; r.n++; r.killed += i.killed; r.civ += i.civ_k + i.civ_w; r.fama += i.fama_k + i.ac_k; if (i.date >= recentFrom) r.recent++; r.actors[i.actor] = (r.actors[i.actor] || 0) + 1; });
+  const rows = Object.values(regions);
+  const nMax = Math.max(1, ...rows.map(r => r.n)), kMax = Math.max(1, ...rows.map(r => r.killed)), cMax = Math.max(1, ...rows.map(r => r.civ));
+  rows.forEach(r => {
+    r.score = Math.round(100 * (0.35 * r.n / nMax + 0.35 * Math.log1p(r.killed) / Math.log1p(kMax) + 0.15 * r.civ / cMax + 0.15 * r.recent / r.n));
+    r.level = r.score >= 70 ? ["Critique", "--sev-crit"] : r.score >= 45 ? ["Élevé", "--sev-high"] : r.score >= 25 ? ["Modéré", "--sev-mod"] : ["Faible", "--sev-low"];
+    r.top = Object.entries(r.actors).sort((a, b) => b[1] - a[1])[0][0];
+  });
+  rows.sort((a, b) => b.score - a.score);
+  threatCache = Object.fromEntries(rows.map(r => [r.region, r]));
+  return rows;
+}
+const sevRamp = s => { const stops = [[0, T["--sev-low"]], [35, T["--sev-mod"]], [60, T["--sev-high"]], [85, T["--sev-crit"]]]; let c = stops[0][1]; stops.forEach(([v, col]) => { if (s >= v) c = col; }); return c; };
+
+function buildLayers() {
+  const L = view.layers, pts = onMap(), dark = isDark();
+  const sel = view.selected ? INC.find(i => i.id === view.selected) : null;
+  const tNow = view.t;
+  const layers = [
+    new deck.GeoJsonLayer({ id: "countries", data: G.countries, stroked: true, filled: true,
+      getFillColor: f => f.properties.iso === "MLI" ? rgb(T["--mali"]) : rgb(T["--land"]), getLineColor: rgb(T["--border"], 200),
+      getLineWidth: f => f.properties.iso === "MLI" ? 1.8 : 1, lineWidthUnits: "pixels", updateTriggers: { getFillColor: [dark], getLineColor: [dark] } }),
+    new deck.GeoJsonLayer({ id: "adm1", data: G.adm1, stroked: true, filled: L.choro, pickable: L.choro,
+      getFillColor: f => { const r = threatCache[f.properties.name]; return r ? rgb(sevRamp(r.score), dark ? 64 : 58) : [0, 0, 0, 0]; },
+      getLineColor: rgb(T["--border"], 170), getLineWidth: 1.1, lineWidthUnits: "pixels",
+      updateTriggers: { getFillColor: [JSON.stringify(threatCache), dark], getLineColor: [dark] } }),
+  ];
+  if (L.cercles) layers.push(new deck.GeoJsonLayer({ id: "adm2", data: G.adm2, stroked: true, filled: false, getLineColor: rgb(T["--adm"], 120), getLineWidth: .6, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+  if (L.rivers) {
+    layers.push(new deck.GeoJsonLayer({ id: "lakes", data: G.lakes, filled: true, stroked: false, getFillColor: rgb(T["--river"], 150), updateTriggers: { getFillColor: [dark] } }));
+    layers.push(new deck.GeoJsonLayer({ id: "rivers", data: G.rivers, getLineColor: rgb(T["--river"], 210), getLineWidth: f => f.properties.rank <= 3 ? 2.2 : 1.2, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+  }
+  if (L.roads) layers.push(new deck.GeoJsonLayer({ id: "roads", data: G.roads, getLineColor: rgb(T["--road"], 190), getLineWidth: f => f.properties.major ? 1.6 : .8, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+  if (L.rings) {
+    layers.push(new deck.PathLayer({ id: "rings", data: RINGS, getPath: d => d.path, getColor: rgb(T["--sev-crit"], 170), getWidth: 1.3, widthUnits: "pixels", updateTriggers: { getColor: [dark] } }));
+    layers.push(new deck.TextLayer({ id: "rings-lbl", data: RINGS, getPosition: d => [META.bamako.lon, META.bamako.lat + d.km / 111.32], getText: d => `${d.km} km`, getSize: 11, getColor: rgb(T["--sev-crit"]), fontFamily: "IBM Plex Mono, monospace", getPixelOffset: [0, -7], characterSet: CHARSET, fontSettings: { sdf: true }, outlineWidth: 3, outlineColor: rgb(T["--surface"], 220), updateTriggers: { getColor: [dark], outlineColor: [dark] } }));
+  }
+  if (L.heat && pts.length) layers.push(new deck.HeatmapLayer({ id: "heat", data: pts, getPosition: d => [d.lon, d.lat], getWeight: d => 1 + Math.sqrt(d.killed), radiusPixels: 55, intensity: 1.2, threshold: .04,
+    colorRange: [[79, 138, 60, 0], [209, 162, 15, 120], [226, 112, 28, 170], [200, 16, 46, 210], [140, 0, 30, 235], [90, 0, 20, 245]] }));
+  if (L.hex && pts.length) layers.push(new deck.HexagonLayer({ id: "hex", data: pts, getPosition: d => [d.lon, d.lat], radius: 30000, extruded: true, elevationScale: 1100, coverage: .88, pickable: true,
+    getElevationWeight: d => 1 + Math.sqrt(d.killed), elevationAggregation: "SUM", getColorWeight: d => 1 + Math.sqrt(d.killed), colorAggregation: "SUM",
+    colorRange: [[233, 196, 106], [240, 160, 60], [226, 112, 28], [214, 70, 40], [200, 16, 46], [140, 10, 40]], material: { ambient: .6, diffuse: .6, shininess: 20 },
+    updateTriggers: { getElevationWeight: [pts.length] } }));
+  if (L.labels) {
+    layers.push(new deck.TextLayer({ id: "regions-lbl", data: REGION_LABELS, getPosition: d => d.pos, getText: d => d.name, getSize: 12, getColor: rgb(T["--muted"], 200), fontFamily: "Barlow Semi Condensed, Arial Narrow, sans-serif", fontWeight: 600, characterSet: CHARSET, fontSettings: { sdf: true }, outlineWidth: 2, outlineColor: rgb(T["--mali"], 200), updateTriggers: { getColor: [dark], outlineColor: [dark] } }));
+    layers.push(new deck.TextLayer({ id: "zone-lbl", data: [{ p: [0.9, 14.75], t: "ZONE DES TROIS FRONTIÈRES" }], getPosition: d => d.p, getText: d => d.t, getSize: 10.5, getColor: rgb(T["--a-eis"], 230), fontFamily: "IBM Plex Mono, monospace", characterSet: CHARSET, fontSettings: { sdf: true }, outlineWidth: 2, outlineColor: rgb(T["--land"], 220), updateTriggers: { getColor: [dark], outlineColor: [dark] } }));
+    const towns = G.towns.filter(t => t.rank <= 3);
+    layers.push(new deck.ScatterplotLayer({ id: "towns", data: towns, getPosition: d => [d.lon, d.lat], getRadius: d => d.rank === 1 ? 4.5 : d.rank === 2 ? 3 : 2, radiusUnits: "pixels", getFillColor: d => d.rank === 1 ? rgb(T["--ink"]) : rgb(T["--muted"]), stroked: true, getLineColor: rgb(T["--surface"]), lineWidthUnits: "pixels", getLineWidth: 1, updateTriggers: { getFillColor: [dark], getLineColor: [dark] } }));
+    layers.push(new deck.TextLayer({ id: "towns-lbl", data: towns, getPosition: d => [d.lon, d.lat], getText: d => d.name, getSize: d => d.rank === 1 ? 13 : d.rank === 2 ? 11.5 : 10, getColor: d => d.rank === 1 ? rgb(T["--ink"]) : rgb(T["--muted"]), fontFamily: "IBM Plex Sans, sans-serif", fontWeight: 500, getPixelOffset: [7, 0], getTextAnchor: "start", getAlignmentBaseline: "center", characterSet: CHARSET, fontSettings: { sdf: true }, outlineWidth: 2.5, outlineColor: rgb(T["--surface"], 210), collisionEnabled: false, updateTriggers: { getColor: [dark], outlineColor: [dark] } }));
+  }
+  if (L.points) {
+    const age = d => tNow === null ? 0 : (toD(tNow) - toD(d.date)) / DAY;
+    layers.push(new deck.ScatterplotLayer({ id: "halo", data: pts.filter(d => tNow !== null && age(d) <= 6), getPosition: d => [d.lon, d.lat], getRadius: d => 12 + 2.2 * Math.sqrt(d.killed) + (6 - age(d)) * 3, radiusUnits: "pixels", getFillColor: d => actorRGB(d.actor, Math.round(40 + 20 * (6 - age(d)))), stroked: false, updateTriggers: { getRadius: [tNow], getFillColor: [tNow, dark] } }));
+    layers.push(new deck.ScatterplotLayer({ id: "incidents", data: pts, pickable: true, autoHighlight: true, highlightColor: rgb(T["--accent"], 255),
+      getPosition: d => [d.lon, d.lat], getRadius: d => 4.5 + 1.9 * Math.sqrt(d.killed), radiusUnits: "pixels", radiusMaxPixels: 44,
+      getFillColor: d => actorRGB(d.actor, tNow !== null && age(d) > 6 ? 130 : 225), stroked: true, getLineColor: d => d.civ_k + d.civ_w > 0 ? rgb(T["--sev-crit"]) : rgb(T["--surface"]), getLineWidth: d => d.civ_k + d.civ_w > 0 ? 2.5 : 1.2, lineWidthUnits: "pixels",
+      updateTriggers: { getFillColor: [tNow, dark], getLineColor: [dark] }, transitions: { getRadius: 300 } }));
+  }
+  if (sel) layers.push(new deck.ScatterplotLayer({ id: "sel", data: [sel], getPosition: d => [d.lon, d.lat], getRadius: d => 10 + 1.9 * Math.sqrt(d.killed), radiusUnits: "pixels", filled: false, stroked: true, getLineColor: rgb(T["--accent"]), getLineWidth: 3, lineWidthUnits: "pixels", updateTriggers: { getLineColor: [dark] } }));
+  return layers;
+}
+function tooltip({ object, layer }) {
+  if (!object) return null;
+  if (layer.id === "incidents") {
+    const d = object;
+    return { html: `<b>${esc(d.place)}</b><br><span style="opacity:.75">${fmtD(d.date, { day: "2-digit", month: "long" })} · ${esc(d.region)} / ${esc(d.cercle)}</span><br>${esc(d.actor)} → ${esc(d.target)}<br>${esc(d.mode)} · <b>${d.killed}</b> tué(s)${d.civ_k + d.civ_w ? ` · <span style="color:${T["--sev-crit"]}">${d.civ_k} civ. tués / ${d.civ_w} blessés</span>` : ""}` };
+  }
+  if (layer.id === "adm1") {
+    const r = threatCache[object.properties.name];
+    return { html: `<b>${esc(object.properties.name)}</b><br>${r ? `Indice ${r.score}/100 · ${r.level[0]}<br>${r.n} incident(s) · ${r.killed} tué(s)` : "Aucun incident retenu"}` };
+  }
+  if (layer.id === "hex") return { html: `<b>${object.points ? object.points.length : object.count} incident(s)</b> dans cet hexagone de 30 km<br>${sum((object.points || []).map(p => p.source || p), "killed")} tué(s)` };
+  return null;
+}
+function initMap() {
+  viewState = HOME();
+  deckgl = new deck.Deck({
+    parent: $("#map"), views: new deck.MapView({ repeat: false }), viewState,
+    controller: { minZoom: 3.6, maxZoom: 11, dragRotate: true },
+    onViewStateChange: ({ viewState: vs }) => { viewState = vs; deckgl.setProps({ viewState }); },
+    getTooltip: tooltip, layers: buildLayers(),
+    onClick: ({ object, layer }) => {
+      if (object && layer && layer.id === "incidents") select(object.id, false);
+      else if (object && layer && layer.id === "adm1") { $("#f-region").value = object.properties.name in threatCache ? object.properties.name : "all"; state.region = $("#f-region").value; render(); }
+    },
+  });
+  const lyr = [["points", "Incidents"], ["heat", "Chaleur"], ["hex", "Hexagones 3D"], ["choro", "Indice de menace"], ["cercles", "Cercles"], ["roads", "Routes"], ["rivers", "Hydrographie"], ["rings", "Rayons Bamako"], ["labels", "Toponymes"]];
+  $("#layers").innerHTML = lyr.map(([k, l]) => `<button type="button" class="ltog" data-k="${k}" aria-pressed="${view.layers[k]}">${l}</button>`).join("") + `<button type="button" class="ltog" id="home" aria-pressed="false">Recentrer</button>`;
+  $("#layers").onclick = e => {
+    const b = e.target.closest(".ltog"); if (!b) return;
+    if (b.id === "home") { flyHome(); return; }
+    const k = b.dataset.k; view.layers[k] = !view.layers[k]; b.setAttribute("aria-pressed", view.layers[k]);
+    if (k === "hex") flyTo({ ...viewState, pitch: view.layers.hex ? 48 : 0, bearing: view.layers.hex ? -12 : 0 }, 900);
+    updateMap(); renderLegend();
+  };
+  initTimeline();
+  window.addEventListener("resize", () => deckgl.setProps({}));
+}
+function flyTo(vs, ms = 1200) { if (!deckgl) return; viewState = { ...vs, transitionDuration: ms, transitionInterpolator: new deck.FlyToInterpolator() }; deckgl.setProps({ viewState }); }
+function flyHome() { flyTo(HOME()); }
+function fitRegion() {
+  if (state.region === "all") return flyHome();
+  const pts = filtered(); if (!pts.length) return;
+  const lon = pts.reduce((s, p) => s + p.lon, 0) / pts.length, lat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+  flyTo({ ...viewState, longitude: lon, latitude: lat, zoom: 6.3 });
+}
+function updateMap() { if (deckgl) deckgl.setProps({ layers: buildLayers() }); }
+function renderLegend() {
+  const L = view.layers;
+  let h = `<span class="eyebrow">Acteur instigateur</span>` + ACTORS.map(a => `<div class="row"><span class="sw" style="--c: var(${a.v})"></span>${a.label}</div>`).join("");
+  h += `<div class="row"><span class="sw" style="--c: transparent; border: 2px solid var(--sev-crit)"></span>Victimes civiles</div><div class="row" style="color: var(--muted)">Taille du point ∝ √ tués</div>`;
+  if (L.choro) h += `<span class="eyebrow" style="margin-top:4px">Indice de menace</span><div class="ramp"></div><div class="row" style="justify-content:space-between;width:140px;color:var(--muted)"><span>faible</span><span>critique</span></div>`;
+  if (L.hex) h += `<div class="row" style="color: var(--muted)">Hexagones : hauteur et couleur = Σ(1 + √tués)</div>`;
+  $("#legend").innerHTML = h;
+}
+
+/* ---------- Chronologie ---------- */
+const DAYS = Array.from({ length: META.days }, (_, k) => isoAdd(META.start, k));
+function initTimeline() {
+  const bars = $("#tl-bars");
+  bars.innerHTML = DAYS.map(d => `<i data-d="${d}" title="${fmtD(d)}"></i>`).join("");
+  bars.onclick = e => { const i = e.target.closest("i"); if (!i) return; stopPlay(); view.t = view.t === i.dataset.d ? null : i.dataset.d; refreshTimeline(); updateMap(); renderSide(); };
+  bars.onkeydown = e => {
+    if (!["ArrowLeft", "ArrowRight", "Escape"].includes(e.key)) return;
+    e.preventDefault(); stopPlay();
+    if (e.key === "Escape") view.t = null;
+    else { const idx = view.t === null ? DAYS.length - 1 : DAYS.indexOf(view.t); view.t = DAYS[Math.max(0, Math.min(DAYS.length - 1, idx + (e.key === "ArrowRight" ? 1 : -1)))]; }
+    refreshTimeline(); updateMap(); renderSide();
+  };
+  $("#play").onclick = () => view.playing ? stopPlay() : startPlay();
+}
+function refreshTimeline() {
+  const list = filtered(), byDay = {};
+  list.forEach(i => byDay[i.date] = (byDay[i.date] || 0) + 1 + Math.sqrt(i.killed) / 4);
+  const max = Math.max(1, ...Object.values(byDay));
+  document.querySelectorAll("#tl-bars i").forEach(el => {
+    const d = el.dataset.d, v = byDay[d] || 0;
+    el.style.height = v ? `${18 + 82 * v / max}%` : "6%";
+    el.className = d === view.t ? "cur" : (v && (view.t === null || d <= view.t)) ? "on" : "";
+  });
+  $("#tl-date").textContent = view.t === null ? "Toute la période" : fmtD(view.t, { day: "2-digit", month: "short", year: "numeric" });
+  const bd = $("#bigdate"); bd.hidden = view.t === null; if (view.t) bd.textContent = fmtD(view.t, { day: "2-digit", month: "long" });
+  $("#tl-bars").setAttribute("aria-valuetext", $("#tl-date").textContent);
+}
+function startPlay() {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let idx = Math.max(0, DAYS.indexOf(state.from));
+  const last = DAYS.indexOf(state.to);
+  $("#play").textContent = "❚❚ Pause";
+  view.playing = setInterval(() => {
+    view.t = DAYS[idx]; refreshTimeline(); updateMap(); renderSide();
+    if (++idx > last) stopPlay(true);
+  }, reduce ? 450 : 210);
+}
+function stopPlay(ended) {
+  if (view.playing) clearInterval(view.playing);
+  view.playing = null; $("#play").textContent = "▶ Lecture";
+  if (ended) setTimeout(() => { if (!view.playing) { view.t = null; refreshTimeline(); updateMap(); renderSide(); } }, 1600);
+}
+
+/* ---------- Panneau latéral ---------- */
+function select(id, fly = true) {
+  view.selected = id; const d = INC.find(i => i.id === id);
+  try { history.replaceState(null, "", "#" + id); } catch (e) { /* lien direct facultatif */ }
+  if (fly && d && deckgl) flyTo({ ...viewState, longitude: d.lon, latitude: d.lat, zoom: Math.max(viewState.zoom, 7) });
+  updateMap(); renderSide();
+}
+function renderSide() {
+  const body = $("#side-body"), close = $("#side-close");
+  const d = view.selected ? INC.find(i => i.id === view.selected) : null;
+  if (d) {
+    $("#side-title").textContent = d.id; close.hidden = false;
+    const srcs = d.sources.map(s => `<span class="src" title="${esc(s.note)}" style="--c: var(${SRC_KIND[s.kind][1]})"><i></i>${esc(s.name)}</span>`).join("");
+    body.innerHTML = `<div class="det" style="display:grid;gap:10px">
+      <div><span class="eyebrow">${fmtD(d.date, { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</span><h3>${esc(d.place)}</h3>
+      <p class="meta">${esc(d.region)} · cercle de ${esc(d.cercle)} · ${fmt(d.dist_bamako)} km de Bamako</p></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill" style="color: var(${ACTOR_VAR[d.actor]})">${esc(d.actor)}</span><span class="pill" style="color: var(--muted)">${esc(d.mode)}</span><span class="pill" style="color: var(${REL_COLOR[d.reliability]})">${esc(d.reliability)}</span>${d.claim_only ? `<span class="pill" style="color: var(--sev-high)">Bilan revendiqué</span>` : ""}</div>
+      <p>${esc(d.desc)}</p>
+      <div class="grid"><div><b>${d.fama_k}</b><span>FDS tués</span></div><div><b>${d.ac_k}</b><span>Africa Corps</span></div><div><b>${d.ga_k}</b><span>Combattants</span></div>
+        <div><b style="color:var(--sev-crit)">${d.civ_k}</b><span>Civils tués</span></div><div><b>${d.civ_w}</b><span>Civils blessés</span></div><div><b>${d.pow}</b><span>Capturés</span></div>
+        <div><b>${d.veh_d}</b><span>Véh. détruits</span></div><div><b>${d.veh_s}</b><span>Véh. saisis</span></div><div><b>${d.killed}</b><span>Total tués</span></div></div>
+      <dl class="kv"><dt>Typologie</dt><dd>${esc(d.typology)}</dd><dt>Instigateur</dt><dd>${esc(d.actor_raw)}${d.actor_presumed ? " (attribution présumée)" : ""}</dd><dt>Cible</dt><dd>${esc(d.target_raw)}</dd>
+        <dt>Matériel</dt><dd>${esc(d.equipment)}</dd><dt>Impact</dt><dd>${esc(d.impact)}</dd><dt>Région déclarée</dt><dd>${esc(d.region_reported)} (${esc(d.country_reported)})</dd>
+        <dt>Coordonnées</dt><dd class="num">${d.lat.toFixed(4)}, ${d.lon.toFixed(4)} <button class="btn" id="copy-xy" type="button" style="padding:1px 6px;font-size:.72rem">Copier</button><br><span style="color:var(--muted)">Précision : ${esc(d.precision)}</span></dd></dl>
+      <div><span class="eyebrow">Sources</span><div style="margin-top:4px">${srcs}</div></div>
+      <button class="btn" id="fly-sel" type="button">Centrer la carte sur l’incident</button></div>`;
+    $("#fly-sel").onclick = () => flyTo({ ...viewState, longitude: d.lon, latitude: d.lat, zoom: 8 });
+    $("#copy-xy").onclick = e => { const t = `${d.lat}, ${d.lon}`; navigator.clipboard?.writeText(t).then(() => e.target.textContent = "Copié", () => e.target.textContent = t).catch(() => e.target.textContent = t); };
+    return;
+  }
+  $("#side-title").textContent = "Foyers et derniers incidents"; close.hidden = true;
+  const list = onMap(), byC = {};
+  list.forEach(i => { const k = i.cercle === "—" ? i.region : `${i.cercle} (${i.region})`; const c = byC[k] ||= { n: 0, k: 0 }; c.n++; c.k += i.killed; });
+  const hot = Object.entries(byC).sort((a, b) => b[1].n - a[1].n || b[1].k - a[1].k).slice(0, 6), max = hot.length ? hot[0][1].n : 1;
+  const feed = [...list].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+  body.innerHTML = list.length ? `<div><span class="eyebrow">Cercles les plus touchés</span><div style="display:grid;gap:8px;margin-top:6px">${hot.map(([k, v]) => `<div class="hot"><span>${esc(k)}</span><span class="num" style="color:var(--muted);font-size:.8rem">${v.n} inc. · ${v.k} tués</span><div class="bar"><i style="width:${100 * v.n / max}%"></i></div></div>`).join("")}</div></div>
+    <div><span class="eyebrow">Derniers incidents${view.t ? " au " + fmtD(view.t) : ""}</span><div class="feed" style="margin-top:6px">${feed.map(i => `<button type="button" data-id="${i.id}" style="--c: var(${ACTOR_VAR[i.actor]})"><small>${fmtD(i.date)} · ${esc(i.actor)} · ${i.killed} tué(s)</small><span>${esc(i.place)}</span><small>${esc(i.mode)}</small></button>`).join("")}</div></div>`
+    : `<p style="color:var(--muted)">Aucun incident ne correspond aux filtres. Élargissez la période ou réactivez des acteurs.</p>`;
+  body.querySelectorAll(".feed button").forEach(b => b.onclick = () => select(b.dataset.id));
+}
+
+/* ---------- Graphiques ---------- */
+const charts = {};
+function chart(id) { if (!charts[id]) charts[id] = echarts.init(document.getElementById(id), null, { renderer: "canvas" }); return charts[id]; }
+function isoWeek(s) { const d = toD(s); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day + 3); const y = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round(((d - y) / DAY - 3 + ((y.getUTCDay() + 6) % 7)) / 7); }
+function weekMonday(s) { const d = toD(s); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); }
+const WEEKS = [...new Set(DAYS.map(weekMonday))];
+const wLabel = m => `S${isoWeek(m)}\n${fmtD(m, { day: "2-digit", month: "2-digit" })}`;
+function base() {
+  return {
+    textStyle: { fontFamily: "IBM Plex Sans, sans-serif", color: T["--ink"] }, animationDuration: 500,
+    grid: { left: 44, right: 44, top: 34, bottom: 44 },
+    tooltip: { trigger: "axis", backgroundColor: T["--surface"], borderColor: T["--line"], textStyle: { color: T["--ink"], fontSize: 12 } },
+    legend: { top: 0, left: 0, textStyle: { color: T["--muted"], fontSize: 11 }, itemWidth: 10, itemHeight: 10, icon: "circle" },
+  };
+}
+const axisCat = data => ({ type: "category", data, axisLine: { lineStyle: { color: T["--line"] } }, axisTick: { show: false }, axisLabel: { color: T["--muted"], fontSize: 10.5 } });
+const axisVal = (name, extra = {}) => ({ type: "value", name, nameTextStyle: { color: T["--muted"], fontSize: 10.5 }, splitLine: { lineStyle: { color: T["--line"], opacity: .7 } }, axisLabel: { color: T["--muted"], fontSize: 10.5 }, ...extra });
+function empty(c) { c.setOption({ title: { text: "Aucune donnée pour ces filtres", left: "center", top: "middle", textStyle: { color: T["--muted"], fontSize: 13, fontWeight: 400 } } }, true); }
+
+function renderCharts(list) {
+  // Rythme hebdomadaire
+  const cw = chart("c-week");
+  if (!list.length) empty(cw); else {
+    const series = ACTORS.filter(a => state.actors.has(a.key)).map(a => ({ name: a.label, type: "bar", stack: "a", barWidth: "58%", itemStyle: { color: T[a.v] }, emphasis: { focus: "series" }, data: WEEKS.map(w => list.filter(i => i.actor === a.key && weekMonday(i.date) === w).length) }));
+    series.push({ name: "Tués", type: "line", yAxisIndex: 1, smooth: .3, symbolSize: 6, lineStyle: { width: 2, color: T["--ink"] }, itemStyle: { color: T["--ink"] }, areaStyle: { color: T["--ink"], opacity: .05 }, data: WEEKS.map(w => sum(list.filter(i => weekMonday(i.date) === w), "killed")) });
+    cw.setOption({ ...base(), xAxis: axisCat(WEEKS.map(wLabel)), yAxis: [axisVal("incidents", { minInterval: 1 }), axisVal("tués", { splitLine: { show: false } })], series }, true);
+  }
+  // Bilan humain
+  const cl = chart("c-loss");
+  if (!list.length) empty(cl); else {
+    const cats = [["FDS maliennes", "fama_k", T["--a-state"]], ["Africa Corps", "ac_k", T["--a-unk"]], ["Combattants armés", "ga_k", T["--a-jnim"]], ["Civils", "civ_k", T["--sev-crit"]]];
+    cl.setOption({ ...base(), xAxis: axisCat(WEEKS.map(wLabel)), yAxis: axisVal("tués"),
+      series: cats.map(([n, k, c]) => ({ name: n, type: "bar", stack: "l", barWidth: "58%", itemStyle: { color: c, borderColor: k === "civ_k" ? T["--surface"] : undefined }, data: WEEKS.map(w => sum(list.filter(i => weekMonday(i.date) === w), k)) })) }, true);
+  }
+  // Sankey
+  const cs = chart("c-sankey");
+  if (!list.length) empty(cs); else {
+    const links = {}, nodes = new Map();
+    const add = (s, t) => { links[s + "|" + t] = (links[s + "|" + t] || 0) + 1; };
+    list.forEach(i => { add("A:" + i.actor, "M:" + i.mode); add("M:" + i.mode, "C:" + i.target); nodes.set("A:" + i.actor, 1); nodes.set("M:" + i.mode, 1); nodes.set("C:" + i.target, 1); });
+    const ncol = k => k.startsWith("A:") ? T[ACTOR_VAR[k.slice(2)]] : k.startsWith("C:") ? (k.includes("Civils") ? T["--sev-crit"] : T["--muted"]) : T["--accent"];
+    cs.setOption({ textStyle: base().textStyle, tooltip: { backgroundColor: T["--surface"], borderColor: T["--line"], textStyle: { color: T["--ink"] }, formatter: p => p.dataType === "edge" ? `${p.data.source.slice(2)} → ${p.data.target.slice(2)} : <b>${p.data.value}</b>` : `${p.name.slice(2)} : <b>${p.value}</b>` },
+      series: [{ type: "sankey", left: 8, right: 150, top: 10, bottom: 10, nodeGap: 9, nodeWidth: 12, draggable: false, emphasis: { focus: "adjacency" },
+        data: [...nodes.keys()].map(k => ({ name: k, itemStyle: { color: ncol(k), borderWidth: 0 } })),
+        links: Object.entries(links).map(([k, v]) => { const [s, t] = k.split("|"); return { source: s, target: t, value: v }; }),
+        lineStyle: { color: "gradient", opacity: .32, curveness: .5 },
+        label: { color: T["--ink"], fontSize: 11.5, formatter: p => p.name.slice(2) } }] }, true);
+  }
+  // Pression sur Bamako
+  const cb = chart("c-bamako");
+  if (!list.length) empty(cb); else {
+    cb.setOption({ ...base(), grid: { left: 52, right: 18, top: 34, bottom: 34 }, tooltip: { trigger: "item", backgroundColor: T["--surface"], borderColor: T["--line"], textStyle: { color: T["--ink"], fontSize: 12 }, formatter: p => `<b>${esc(p.data.i.place)}</b><br>${fmtD(p.data.i.date)} · ${p.data.i.dist_bamako} km<br>${esc(p.data.i.actor)} · ${p.data.i.killed} tué(s)` },
+      xAxis: { type: "time", min: META.start, max: META.end, axisLabel: { color: T["--muted"], fontSize: 10.5, formatter: v => new Date(v).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", timeZone: "UTC" }) }, axisLine: { lineStyle: { color: T["--line"] } }, splitLine: { show: false } },
+      yAxis: axisVal("km de Bamako", { max: 1300 }),
+      series: ACTORS.filter(a => state.actors.has(a.key)).map(a => ({ name: a.label, type: "scatter", itemStyle: { color: T[a.v], opacity: .85, borderColor: T["--surface"], borderWidth: 1 },
+        data: list.filter(i => i.actor === a.key).map(i => ({ value: [i.date, i.dist_bamako], i, symbolSize: 7 + 2.4 * Math.sqrt(i.killed) })),
+        markLine: a.key === "JNIM" ? { silent: true, symbol: "none", lineStyle: { color: T["--sev-crit"], type: "dashed" }, label: { color: T["--sev-crit"], formatter: "300 km", fontSize: 10 }, data: [{ yAxis: 300 }] } : undefined })) }, true);
+    cb.off("click"); cb.on("click", p => p.data && p.data.i && select(p.data.i.id));
+  }
+  // Modes opératoires
+  const cm = chart("c-modes");
+  if (!list.length) empty(cm); else {
+    const m = {}; list.forEach(i => { const r = m[i.mode] ||= { n: 0, k: 0 }; r.n++; r.k += i.killed; });
+    const rows = Object.entries(m).sort((a, b) => a[1].n - b[1].n || a[1].k - b[1].k);
+    cm.setOption({ ...base(), grid: { left: 160, right: 30, top: 34, bottom: 30 }, tooltip: { ...base().tooltip, axisPointer: { type: "shadow" } },
+      yAxis: { ...axisCat(rows.map(r => r[0])), axisLabel: { color: T["--ink"], fontSize: 11 } },
+      xAxis: [axisVal("incidents", { minInterval: 1, position: "bottom" }), axisVal("tués (log)", { type: "log", min: 1, position: "top", splitLine: { show: false } })],
+      series: [{ name: "Incidents", type: "bar", barWidth: 10, itemStyle: { color: T["--accent"], borderRadius: [0, 3, 3, 0] }, data: rows.map(r => r[1].n) },
+        { name: "Tués", type: "scatter", xAxisIndex: 1, symbol: "diamond", symbolSize: 11, itemStyle: { color: T["--sev-crit"] }, data: rows.map(r => Math.max(1, r[1].k)) }] }, true);
+  }
+  // Matrice
+  const cx = chart("c-matrix");
+  if (!list.length) empty(cx); else {
+    const regs = [...new Set(list.map(i => i.region))].sort((a, b) => list.filter(i => i.region === a).length - list.filter(i => i.region === b).length);
+    const data = []; let mx = 1;
+    regs.forEach((r, y) => WEEKS.forEach((w, x) => { const n = list.filter(i => i.region === r && weekMonday(i.date) === w).length; mx = Math.max(mx, n); data.push([x, y, n || "-"]); }));
+    cx.setOption({ textStyle: base().textStyle, grid: { left: 150, right: 16, top: 10, bottom: 70 }, tooltip: { backgroundColor: T["--surface"], borderColor: T["--line"], textStyle: { color: T["--ink"] }, formatter: p => `${regs[p.data[1]]} · ${wLabel(WEEKS[p.data[0]]).replace("\n", " ")}<br><b>${p.data[2] === "-" ? 0 : p.data[2]}</b> incident(s)` },
+      xAxis: { ...axisCat(WEEKS.map(wLabel)), splitArea: { show: false } }, yAxis: { ...axisCat(regs), axisLabel: { color: T["--ink"], fontSize: 11 } },
+      visualMap: { min: 0, max: mx, calculable: false, orient: "horizontal", left: "center", bottom: 0, itemHeight: 120, itemWidth: 10, textStyle: { color: T["--muted"], fontSize: 10 }, inRange: { color: [T["--surface-2"], T["--sev-mod"], T["--sev-high"], T["--sev-crit"]] } },
+      series: [{ type: "heatmap", data, label: { show: true, color: T["--ink"], fontSize: 10, formatter: p => p.data[2] === "-" ? "" : p.data[2] }, itemStyle: { borderColor: T["--surface"], borderWidth: 2, borderRadius: 2 } }] }, true);
+  }
+  // Fiabilité
+  const cr = chart("c-rel");
+  if (!list.length) empty(cr); else {
+    const keys = Object.keys(REL_COLOR), kinds = {};
+    list.forEach(i => i.sources.forEach(s => kinds[s.kind] = (kinds[s.kind] || 0) + 1));
+    cr.setOption({ textStyle: base().textStyle, tooltip: { trigger: "item", backgroundColor: T["--surface"], borderColor: T["--line"], textStyle: { color: T["--ink"] } },
+      legend: { ...base().legend, orient: "vertical", left: 0, top: "middle" },
+      series: [
+        { name: "Corroboration", type: "pie", radius: ["44%", "70%"], center: ["68%", "50%"], label: { color: T["--ink"], formatter: "{c}", fontSize: 12 }, labelLine: { length: 6, length2: 6 }, itemStyle: { borderColor: T["--surface"], borderWidth: 2 },
+          data: keys.map(k => ({ name: k, value: list.filter(i => i.reliability === k).length, itemStyle: { color: T[REL_COLOR[k]] } })).filter(d => d.value) },
+        { name: "Citations par type de source", type: "pie", radius: ["0%", "34%"], center: ["68%", "50%"], label: { show: false }, itemStyle: { borderColor: T["--surface"], borderWidth: 1 },
+          data: Object.entries(kinds).map(([k, v]) => ({ name: SRC_KIND[k][0], value: v, itemStyle: { color: T[SRC_KIND[k][1]], opacity: .7 } })) },
+      ] }, true);
+  }
+}
+
+/* ---------- Indice de menace ---------- */
+function renderThreat(rows) {
+  $("#threat").innerHTML = `<thead><tr><th>Région</th><th>Indice</th><th>Niveau</th><th class="n">Incidents</th><th class="n">Tués</th><th class="n">FDS + AC tués</th><th class="n">Civils touchés</th><th class="n">21 derniers jours</th><th>Acteur dominant</th></tr></thead><tbody>` +
+    (rows.length ? rows.map(r => `<tr><td><b>${esc(r.region)}</b></td><td><div class="score" style="--c: var(${r.level[1]})"><span class="num" style="width:2.2em">${r.score}</span><span class="b"><i style="width:${r.score}%"></i></span></div></td>
+      <td><span class="pill lvl" style="--c: var(${r.level[1]})">${r.level[0]}</span></td><td class="n">${r.n}</td><td class="n">${r.killed}</td><td class="n">${r.fama}</td><td class="n">${r.civ}</td><td class="n">${r.recent}</td>
+      <td><span class="inc"><span class="a" style="--c: var(${ACTOR_VAR[r.top]})"><i></i>${esc(r.top)}</span></span></td></tr>`).join("") : `<tr><td colspan="9" style="color:var(--muted)">Aucun incident retenu.</td></tr>`) + "</tbody>";
+}
+
+/* ---------- Cartes acteurs ---------- */
+function renderActorCards() {
+  const txt = {
+    "JNIM": "Acteur dominant. Il combine embuscades, EEI télécommandés, tirs de mortier et SPG-9 sur Sévaré et prises de postes. Son centre de gravité est l’axe Ségou–Mopti, avec des projections vers Koulikoro et Sikasso. Il cible aussi les milices dozos, y compris le convoi de Youssouf Toloba.",
+    "EI-Sahel": "Peu d’incidents mais une létalité extrême : guerre ouverte contre le JNIM dans le Liptako (Gonadaouri / Ndaki, Oudalan) et embuscade contre un convoi FAMa sur l’axe Ansongo–Ménaka. Il cherche le contrôle territorial de la bande frontalière.",
+    "FLA": "Il mène une guerre asymétrique par drones FPV et kamikazes (Aguelhoc, Goundam, Soumpi) et a abattu un drone Molniya-2. Il a perdu Kidal le 10/10. Ses frappes jusqu’à Soumpi indiquent une portée qui dépasse l’Adrar des Ifoghas.",
+    "FAMa / Africa Corps": "Ils ont repris l’initiative au nord (Kidal, campagne de frappes sur Anéfif et Tinzaouatène) et subissent l’usure au centre. Leurs frappes aériennes causent toutes les morts civiles de la base. Leurs pertes aériennes et la vulnérabilité de leurs convois limitent leur manœuvre.",
+  };
+  $("#actor-cards").innerHTML = ACTORS.filter(a => txt[a.key]).map(a => {
+    const l = INC.filter(i => i.actor === a.key);
+    return `<div class="actor" style="--c: var(${a.v})"><h3>${a.label}</h3><div class="stats">${l.length} incidents · ${sum(l, "killed")} tués lors de ses actions · ${[...new Set(l.map(i => i.region))].length} zone(s)</div><p style="font-size:.88rem">${txt[a.key]}</p></div>`;
+  }).join("");
+}
+function renderQuality() {
+  const zone = INC.filter(i => i.precision.startsWith("Zone")).length, partisan = INC.filter(i => i.reliability === "Source partisane seule" || i.reliability === "Source unique").length;
+  const mism = INC.filter(i => !String(i.country_reported).startsWith(i.country) && !String(i.country_reported).includes(i.country));
+  const items = [
+    `<b>Risque de double comptage.</b> INC-2026-003 (01/09, Gonadaouri / Ndaki, 200 tués) et INC-2026-025 (09/10, Ganadaouri, 400 tués) désignent des toponymes voisins. Ensemble, ils pèsent 64 % de la létalité ; à recouper avant toute diffusion.`,
+    `<b>Bilans revendiqués.</b> Les pertes de Dioura (150) et de Sévaré (33) proviennent en partie d’AzZalaqa, organe du JNIM. Les bilans de l’EI-Sahel proviennent d’Amaq. ${partisan} incident(s) ne reposent sur aucune source indépendante.`,
+    `<b>Géolocalisation.</b> ${zone} incidents sont positionnés au niveau d’une zone (une décimale, ± 10 km). INC-2026-022, une campagne de frappes sur quatre sites, est représentée par un seul point à Anéfif.`,
+    `<b>Catégories ambiguës.</b> Pour INC-2026-017, la description parle de « 7 morts / blessés » russes, mais la base enregistre 7 morts. INC-2026-015 n’est attribué au JNIM qu’à titre présumé.`,
+    `<b>Contrôle spatial.</b> ${mism.length ? mism.map(i => `${i.id} est déclaré « ${esc(i.country_reported)} » et ses coordonnées tombent au ${esc(i.country)}`).join(" ; ") + "." : "Pays déclarés et coordonnées concordants."} INC-2026-003, déclaré frontalier, se situe dans le cercle de Gourma-Rharous (Tombouctou).`,
+    `<b>Couverture.</b> 36 incidents en 57 jours, ce qui reflète la sélection du compilateur et non l’exhaustivité du conflit. Les variations de faible effectif, d’une semaine ou d’une région à l’autre, sont à interpréter avec prudence.`,
+  ];
+  $("#quality").innerHTML = items.map(t => `<li>${t}</li>`).join("");
+}
+
+/* ---------- Registre ---------- */
+function renderTable() {
+  const cols = [["id", "ID"], ["date", "Date"], ["region", "Région / cercle"], ["place", "Localité"], ["actor", "Instigateur"], ["mode", "Mode"], ["target", "Cible"], ["killed", "Tués"], ["civ_k", "Civils t./b."], ["reliability", "Fiabilité"]];
+  const q = state.q;
+  let list = filtered().filter(i => !q || [i.id, i.place, i.actor_raw, i.target_raw, i.region, i.cercle, i.desc, i.mode, i.sources.map(s => s.name).join(" ")].join(" ").toLowerCase().includes(q));
+  const { k, dir } = view.sort;
+  list.sort((a, b) => (typeof a[k] === "number" ? a[k] - b[k] : String(a[k]).localeCompare(String(b[k]), "fr")) * dir);
+  $("#inc").innerHTML = `<thead><tr>${cols.map(([c, l]) => `<th data-k="${c}" aria-sort="${k === c ? (dir > 0 ? "ascending" : "descending") : "none"}">${l}</th>`).join("")}</tr></thead><tbody>` +
+    (list.length ? list.map(i => `<tr data-id="${i.id}"><td class="num">${i.id.replace("INC-2026-", "")}</td><td class="num" style="white-space:nowrap">${fmtD(i.date)}</td><td>${esc(i.region)}<br><span style="color:var(--muted)">${esc(i.cercle)}</span></td><td>${esc(i.place)}</td>
+      <td><span class="a" style="--c: var(${ACTOR_VAR[i.actor]})"><i></i>${esc(i.actor)}</span></td><td>${esc(i.mode)}</td><td>${esc(i.target)}</td><td class="num"><b>${i.killed}</b></td>
+      <td class="num" style="color:${i.civ_k + i.civ_w ? "var(--sev-crit)" : "var(--muted)"}">${i.civ_k} / ${i.civ_w}</td><td><span class="pill" style="color: var(${REL_COLOR[i.reliability]})">${esc(i.reliability)}</span></td></tr>`).join("")
+      : `<tr><td colspan="10" style="color:var(--muted);padding:14px">Aucun incident ne correspond à la recherche.</td></tr>`) + "</tbody>";
+  $("#inc thead").onclick = e => { const th = e.target.closest("th"); if (!th) return; const c = th.dataset.k; view.sort = { k: c, dir: view.sort.k === c ? -view.sort.dir : (["killed", "civ_k", "date"].includes(c) ? -1 : 1) }; renderTable(); };
+  $("#inc tbody").onclick = e => { const tr = e.target.closest("tr[data-id]"); if (!tr) return; select(tr.dataset.id); $("#map-h").scrollIntoView({ behavior: "smooth", block: "start" }); };
+}
+
+/* ---------- Rendu ---------- */
+function render() {
+  const list = filtered();
+  $("#count-n").textContent = list.length;
+  renderKPIs(list);
+  renderThreat(computeThreat(list));
+  if (view.selected && !list.some(i => i.id === view.selected)) view.selected = null;
+  refreshTimeline(); updateMap(); renderSide(); renderLegend();
+  if (window.echarts) renderCharts(list);
+  renderTable();
+}
+function boot() {
+  readTokens();
+  $("#period-label").textContent = `${fmtD(META.start, { day: "numeric", month: "long" })} – ${fmtD(META.end, { day: "numeric", month: "long", year: "numeric" })}`;
+  $("#gen-label").textContent = `Mise à jour : ${fmtD(META.generated, { day: "2-digit", month: "2-digit", year: "numeric" })}`;
+  $("#gen-date").textContent = fmtD(META.generated, { day: "2-digit", month: "long", year: "numeric" });
+  initFilters(); renderActorCards(); renderQuality();
+  if (window.deck) initMap(); else $("#map").innerHTML = `<p style="padding:20px;color:var(--muted)">Le moteur cartographique n’a pas pu être chargé. Vérifiez l’accès à unpkg.com.</p>`;
+  render();
+  $("#side-close").onclick = () => { view.selected = null; try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* lien direct facultatif */ } updateMap(); renderSide(); };
+  // Lien direct vers un incident (#INC-2026-007), utilisé notamment par le classeur Excel.
+  const fromHash = () => { const h = decodeURIComponent(location.hash.slice(1)); if (h && h !== view.selected && INC.some(i => i.id === h)) { select(h); $("#map-h").scrollIntoView({ block: "start" }); } };
+  window.addEventListener("hashchange", fromHash); setTimeout(fromHash, 300);
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => Object.values(charts).forEach(c => c.resize()), 120); });
+  const retheme = () => { readTokens(); Object.values(charts).forEach(c => c.dispose()); for (const k in charts) delete charts[k]; render(); };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  $("#theme-btn").onclick = () => { document.documentElement.dataset.theme = isDark() ? "light" : "dark"; };
+}
+boot();
+})();
+</script>

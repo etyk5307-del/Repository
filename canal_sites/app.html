@@ -1,0 +1,1016 @@
+<title>Sûreté des sites — Burkina Faso · Mali · Niger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="lib/leaflet.css">
+<link rel="stylesheet" href="lib/MarkerCluster.css">
+<style>
+/* Poste de sûreté : bandeau (titre, périodes, recherche, outils) · panneau à onglets à gauche · carte plein écran à droite. */
+:root {
+  --bg: #f6f5f1; --surface: #ffffff; --surface-2: #f1f0ea; --ink: #1d2426; --muted: #5d6668; --faint: #8f9799; --line: #dcdad2;
+  --accent: #0e5c5a; --accent-soft: #d8ebe8; --accent-ink: #ffffff;
+  --normal: #2e8b3e; --attention: #e6b422; --veille: #e07b1a; --adapt: #c62a2a; --info: #2a7ab0;
+  --sea: #dfe6e8; --land: #eeece5; --focus: #fbfaf7; --border: #6f7779; --adm: #b9b6ac; --road: #c9b48a; --river: #8fb7d2;
+  --f-serif: "Source Serif 4", Georgia, "Times New Roman", serif; --f-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --side: 430px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121615; --surface: #191e1d; --surface-2: #212726; --ink: #e5e9e7; --muted: #9aa4a1; --faint: #6c7673; --line: #2d3533;
+  --accent: #4fb3a9; --accent-soft: #1d3a37; --accent-ink: #0b1514;
+  --normal: #56b765; --attention: #e9c34a; --veille: #f0913a; --adapt: #ef5454; --info: #5aa6d8;
+  --sea: #0f1416; --land: #1d2322; --focus: #262d2b; --border: #8d9895; --adm: #4a5451; --road: #7d6c4d; --river: #3d6f8f;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121615; --surface: #191e1d; --surface-2: #212726; --ink: #e5e9e7; --muted: #9aa4a1; --faint: #6c7673; --line: #2d3533;
+  --accent: #4fb3a9; --accent-soft: #1d3a37; --accent-ink: #0b1514;
+  --normal: #56b765; --attention: #e9c34a; --veille: #f0913a; --adapt: #ef5454; --info: #5aa6d8;
+  --sea: #0f1416; --land: #1d2322; --focus: #262d2b; --border: #8d9895; --adm: #4a5451; --road: #7d6c4d; --river: #3d6f8f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-serif); font-size: 15px; line-height: 1.45; display: flex; flex-direction: column; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); } .num { font-variant-numeric: tabular-nums; }
+
+/* Bandeau */
+.top { background: var(--surface); border-bottom: 1px solid var(--line); padding: 10px max(14px, env(safe-area-inset-right, 0px)) 10px max(14px, env(safe-area-inset-left, 0px)); display: grid; gap: 8px; }
+.top-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.title h1 { margin: 0; font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; }
+.title p { margin: 2px 0 0; color: var(--muted); font-size: .86rem; }
+.periods { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.periods button { border: 0; border-right: 1px solid var(--line); background: var(--surface); padding: 6px 12px; cursor: pointer; font-family: var(--f-serif); }
+.periods button:last-child { border-right: 0; }
+.periods button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.periods button:disabled { color: var(--faint); cursor: default; }
+.datechip { font-family: var(--f-mono); font-size: .82rem; background: var(--accent-soft); color: var(--accent); border-radius: 4px; padding: 5px 10px; }
+.search { flex: 1 1 260px; max-width: 420px; position: relative; }
+.search input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: var(--surface-2); }
+.search ul { position: absolute; z-index: 1200; top: 100%; left: 0; right: 0; margin: 4px 0 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.14); max-height: 320px; overflow: auto; }
+.search li button { width: 100%; text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 4px; cursor: pointer; display: grid; }
+.search li button:hover, .search li button:focus { background: var(--surface-2); }
+.search li small { color: var(--muted); font-family: var(--f-sans); font-size: .74rem; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: var(--f-serif); }
+.btn:hover { border-color: var(--accent); }
+.btn[aria-pressed="true"], .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.sm { padding: 3px 8px; font-size: .82rem; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+/* Corps */
+.body { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--side) minmax(0, 1fr); }
+.side { background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+.tabs button { flex: 1 0 auto; border: 0; border-bottom: 2px solid transparent; background: none; padding: 10px 7px 8px; font-size: .9rem; cursor: pointer; color: var(--muted); font-weight: 600; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.panel { overflow-y: auto; padding: 12px 12px 30px; display: grid; gap: 14px; align-content: start; min-height: 0; flex: 1; }
+.panel[hidden] { display: none !important; }
+.h { font-family: var(--f-sans); font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.card { border: 1px solid var(--line); background: var(--surface-2); border-radius: 6px; padding: 9px 10px; min-width: 0; }
+.card b { display: block; font-family: var(--f-mono); font-size: 1.45rem; font-weight: 600; line-height: 1.1; }
+.card span { display: block; font-size: .8rem; color: var(--muted); line-height: 1.25; margin-top: 3px; }
+.card.red b { color: var(--adapt); }
+.lecture { border-left: 3px solid var(--accent); background: var(--surface-2); padding: 10px 12px; border-radius: 0 6px 6px 0; font-size: .92rem; }
+.field { display: grid; gap: 4px; }
+.field label, .lbl { font-family: var(--f-sans); font-size: .74rem; color: var(--muted); font-weight: 500; }
+.field select, .field input, .field textarea { border: 1px solid var(--line); background: var(--surface-2); border-radius: 6px; padding: 6px 8px; width: 100%; min-width: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px; cursor: pointer; font-size: .84rem; display: inline-flex; align-items: center; gap: 6px; }
+.chip[aria-pressed="true"] { border-color: var(--c, var(--accent)); background: color-mix(in srgb, var(--c, var(--accent)) 14%, var(--surface)); font-weight: 600; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); border: 1.5px solid rgba(0,0,0,.35); flex: none; }
+.list { display: grid; gap: 4px; }
+.item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 8px; cursor: pointer; }
+.item:hover { border-color: var(--accent); }
+.item small { grid-column: 2 / 4; color: var(--muted); font-family: var(--f-sans); font-size: .74rem; }
+.tbl { width: 100%; border-collapse: collapse; font-size: .84rem; }
+.tbl th { text-align: left; font-family: var(--f-sans); font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: 5px 6px; border-bottom: 1px solid var(--line); }
+.tbl td { padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl tr.click { cursor: pointer; } .tbl tr.click:hover td { background: var(--surface-2); }
+.lvl { font-family: var(--f-sans); font-size: .72rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; color: #fff; background: var(--c); white-space: nowrap; }
+.drop { border: 2px dashed var(--line); border-radius: 6px; padding: 12px; text-align: center; color: var(--muted); font-size: .88rem; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.note { color: var(--muted); font-size: .82rem; font-family: var(--f-sans); }
+.ok { color: var(--normal); } .warn { color: var(--veille); } .crit { color: var(--adapt); }
+.stops { display: grid; gap: 6px; counter-reset: s; }
+.stop { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--surface); }
+.stop::before { counter-increment: s; content: counter(s); font-family: var(--f-mono); font-weight: 600; color: var(--accent); }
+.timeline { display: grid; gap: 0; }
+.tl { display: grid; grid-template-columns: 60px 14px minmax(0, 1fr); gap: 8px; }
+.tl .t { font-family: var(--f-mono); font-size: .82rem; text-align: right; padding-top: 1px; }
+.tl .bar { position: relative; } .tl .bar::before { content: ""; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: var(--line); } .tl .bar::after { content: ""; position: absolute; left: 2px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--accent)); }
+.tl .d { padding-bottom: 12px; font-size: .88rem; }
+
+/* Carte */
+.mapwrap { position: relative; min-height: 0; }
+#map { position: absolute; inset: 0; background: var(--sea); }
+.leaflet-container { font-family: var(--f-serif); background: var(--sea); }
+.leaflet-control-zoom a, .qz button { background: var(--surface) !important; color: var(--ink) !important; border-color: var(--line) !important; }
+.qz { display: grid; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.qz button { border: 0; border-bottom: 1px solid var(--line); padding: 6px 8px; cursor: pointer; font-weight: 600; font-size: .86rem; font-family: var(--f-serif); }
+.qz button:last-child { border-bottom: 0; }
+.qz button:hover { background: var(--surface-2) !important; }
+.legend { background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 1px 6px rgba(0,0,0,.12); min-width: 220px; max-width: 280px; font-size: .84rem; }
+.legend summary { cursor: pointer; padding: 8px 12px; font-family: var(--f-sans); font-weight: 600; letter-spacing: .08em; font-size: .74rem; list-style: none; display: flex; justify-content: space-between; }
+.legend summary::after { content: "▸"; } .legend[open] summary::after { content: "▾"; }
+.legend .in { padding: 2px 12px 10px; display: grid; gap: 4px; max-height: 60vh; overflow: auto; }
+.legend .r { display: flex; align-items: center; gap: 8px; }
+.coords { background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; font-family: var(--f-mono); font-size: .8rem; color: var(--ink); }
+.north { width: 30px; height: 40px; color: var(--ink); }
+.leaflet-control-scale-line { background: color-mix(in srgb, var(--surface) 85%, transparent); border-color: var(--ink); color: var(--ink); font-family: var(--f-mono); }
+.leaflet-control-attribution { font-family: var(--f-sans); font-size: 10px; background: color-mix(in srgb, var(--surface) 80%, transparent) !important; color: var(--muted); }
+.leaflet-control-attribution a { color: var(--muted); }
+.lbl-country { font-family: var(--f-serif); font-weight: 600; letter-spacing: .24em; color: var(--muted); font-size: 14px; white-space: nowrap; text-shadow: 0 0 3px var(--land), 0 0 3px var(--land); pointer-events: none; }
+.lbl-country.focus { color: var(--ink); opacity: .55; font-size: 17px; text-shadow: 0 0 3px var(--focus), 0 0 3px var(--focus); }
+.lbl-town { font-family: var(--f-serif); font-size: 13px; color: var(--ink); white-space: nowrap; pointer-events: none; text-shadow: 0 0 2px var(--focus), 0 0 2px var(--focus), 0 0 3px var(--focus); }
+.lbl-town.cap { font-weight: 700; font-size: 15px; }
+.lbl-town i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ink); margin-right: 5px; vertical-align: 1px; }
+.lbl-region { font-family: var(--f-sans); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); opacity: .75; white-space: nowrap; pointer-events: none; text-shadow: 0 0 3px var(--focus); }
+.cl { border-radius: 50%; display: grid; place-items: center; color: #fff; font-family: var(--f-mono); font-weight: 600; font-size: 12px; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+.leaflet-popup-content-wrapper { background: var(--surface); color: var(--ink); border-radius: 8px; }
+.leaflet-popup-tip { background: var(--surface); }
+.leaflet-popup-content { margin: 12px 14px; font-family: var(--f-serif); font-size: .9rem; min-width: 230px; }
+.pop h4 { margin: 0 0 2px; font-size: 1.02rem; }
+.pop .m { color: var(--muted); font-size: .8rem; font-family: var(--f-sans); }
+.pop dl { display: grid; grid-template-columns: 92px 1fr; gap: 2px 8px; margin: 8px 0; font-size: .84rem; }
+.pop dt { color: var(--muted); } .pop dd { margin: 0; }
+.pop .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.measure-tip { font-family: var(--f-mono); font-size: 12px; background: var(--ink); color: var(--surface); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+.toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 8px 14px; border-radius: 6px; font-family: var(--f-sans); font-size: .88rem; z-index: 3000; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+@media (max-width: 900px) {
+  body { display: block; height: auto; }
+  .body { display: flex; flex-direction: column-reverse; }
+  .mapwrap { height: 62vh; min-height: 420px; }
+  .side { border-right: 0; border-top: 1px solid var(--line); }
+  .panel { max-height: none; overflow: visible; }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .legend { display: none; }
+  .qz button[data-z="Ouaga"], .qz button[data-z="Bamako"], .qz button[data-z="Niamey"] { display: none; }
+}
+@media print {
+  .top, .tabs, .mapwrap, .side > :not(#p-mission) { display: none !important; }
+  .body { display: block; } .side { border: 0; } #p-mission { display: grid !important; overflow: visible; }
+  #p-mission .noprint { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<header class="top">
+  <div class="top-row">
+    <div class="title"><h1 id="title">Sûreté des sites — Burkina Faso · Mali · Niger</h1><p id="subtitle">Points de vente agréés · continuité d’activité · incidents et conditions d’exploitation</p></div>
+    <div class="periods" id="periods" role="group" aria-label="Période des incidents"></div>
+    <span class="datechip" id="datechip">Aucun incident chargé</span>
+  </div>
+  <div class="top-row">
+    <div class="search"><input id="q" type="search" placeholder="Rechercher un site, une ville, un incident (n°, nom…)" autocomplete="off" aria-label="Rechercher"><ul id="sugg" hidden></ul></div>
+    <button class="btn" id="measure" type="button" aria-pressed="false">📏 Mesurer</button>
+    <button class="btn" id="theme" type="button">Thème clair / sombre</button>
+  </div>
+</header>
+
+<div class="body">
+  <aside class="side">
+    <nav class="tabs" role="tablist" aria-label="Panneaux">
+      <button role="tab" data-p="synthese" aria-selected="true">Synthèse</button>
+      <button role="tab" data-p="filtres" aria-selected="false">Filtres</button>
+      <button role="tab" data-p="sites" aria-selected="false">Sites</button>
+      <button role="tab" data-p="securite" aria-selected="false">Sécurité</button>
+      <button role="tab" data-p="itin" aria-selected="false">Itinéraires</button>
+      <button role="tab" data-p="mission" aria-selected="false">Trajet</button>
+      <button role="tab" data-p="couches" aria-selected="false">Couches</button>
+    </nav>
+
+    <section class="panel" id="p-synthese">
+      <p class="h">Situation sur la période affichée</p>
+      <div class="cards" id="cards"></div>
+      <p class="h">Lecture</p>
+      <div class="lecture" id="lecture"></div>
+      <p class="h">Par pays</p>
+      <table class="tbl" id="by-country"></table>
+      <p class="h">Régions les plus exposées</p>
+      <table class="tbl" id="by-region"></table>
+    </section>
+
+    <section class="panel" id="p-filtres" hidden>
+      <div class="field"><label for="f-iso">Pays</label><select id="f-iso"><option value="">Burkina Faso, Mali et Niger</option><option value="BFA">Burkina Faso</option><option value="MLI">Mali</option><option value="NER">Niger</option></select></div>
+      <div class="row2">
+        <div class="field"><label for="f-reg">Région</label><select id="f-reg"><option value="">Toutes</option></select></div>
+        <div class="field"><label for="f-prov">Province / cercle / département</label><select id="f-prov"><option value="">Toutes</option></select></div>
+      </div>
+      <div class="field"><label for="f-zone">Zone commerciale</label><select id="f-zone"><option value="">Toutes</option></select></div>
+      <div><span class="lbl">Niveau de sûreté des sites</span><div class="chips" id="f-post"></div></div>
+      <div class="field"><label for="f-qc">Géolocalisation</label><select id="f-qc"><option value="">Toutes</option><option value="ok">Fiable</option><option value="check">Corrigée ou à vérifier</option></select></div>
+      <p class="h">Incidents</p>
+      <div class="row2">
+        <div class="field"><label for="f-d0">Du</label><input id="f-d0" type="date"></div>
+        <div class="field"><label for="f-d1">Au</label><input id="f-d1" type="date"></div>
+      </div>
+      <div class="field"><label for="f-itype">Type d’incident</label><select id="f-itype"><option value="">Tous</option></select></div>
+      <label style="display:flex;gap:8px;align-items:center;font-size:.9rem"><input type="checkbox" id="f-grave"> Incidents graves seulement</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="f-fit" type="button">Cadrer la carte</button><button class="btn" id="f-reset" type="button">Réinitialiser</button></div>
+      <p class="note" id="f-count"></p>
+    </section>
+
+    <section class="panel" id="p-sites" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><p class="h" id="sites-h">Sites</p><span class="note" id="sites-n"></span></div>
+      <div class="list" id="sites-list"></div>
+      <button class="btn" id="sites-more" type="button" hidden>Afficher plus</button>
+      <p class="h">Importer des sites (Mali, Niger ou mise à jour)</p>
+      <div class="drop" id="drop-sites">Export Excel ou CSV au format « points de vente » (Latitude, Longitude, Pays, Nom…)<br><label class="btn sm" for="file-sites" style="display:inline-block;margin-top:6px">Choisir un fichier</label><input id="file-sites" type="file" accept=".xlsx,.xls,.csv" hidden></div>
+      <p class="note" id="sites-import"></p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" id="exp-sites" type="button">Exporter les sites filtrés (Excel)</button><button class="btn sm" id="exp-sites-geo" type="button">GeoJSON</button><button class="btn sm" id="clear-sites" type="button">Retirer les sites importés</button></div>
+    </section>
+
+    <section class="panel" id="p-securite" hidden>
+      <p class="h">Importer des données sécuritaires</p>
+      <div class="drop" id="drop-inc">Incidents en Excel, CSV ou GeoJSON<br><label class="btn sm" for="file-inc" style="display:inline-block;margin-top:6px">Choisir un fichier</label><input id="file-inc" type="file" accept=".xlsx,.xls,.csv,.json,.geojson" hidden></div>
+      <p class="note">Colonnes reconnues : <span class="mono">lat, lon, date, type, gravite, tues, blesses, localite, auteur, description, source</span>. Un incident est « grave » si la colonne gravité l’indique, s’il y a au moins un tué ou trois blessés, ou si son type est une attaque, une embuscade, un EEI ou un enlèvement.</p>
+      <label style="display:flex;gap:8px;align-items:center;font-size:.9rem"><input type="checkbox" id="use-mali"> Inclure la base incidents Mali (<span id="n-mali">0</span> incidents)</label>
+      <p class="note" id="inc-status"></p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" id="tpl-inc" type="button">Modèle d’import (Excel)</button><button class="btn sm" id="clear-inc" type="button">Retirer les incidents importés</button></div>
+      <p class="h">Règles du niveau de sûreté des sites</p>
+      <div class="row3">
+        <div class="field"><label for="r1">Adaptation ≤ (km)</label><input id="r1" type="number" min="1" max="200" value="10"></div>
+        <div class="field"><label for="r2">Veille ≤ (km)</label><input id="r2" type="number" min="1" max="200" value="25"></div>
+        <div class="field"><label for="r3">Attention ≤ (km)</label><input id="r3" type="number" min="1" max="300" value="50"></div>
+      </div>
+      <p class="note" id="rules-txt"></p>
+      <p class="h">Évaluation par région</p>
+      <table class="tbl" id="reg-eval"></table>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm primary" id="exp-eval" type="button">Exporter l’évaluation (Excel)</button><button class="btn sm" id="exp-inc" type="button">Exporter les incidents filtrés</button></div>
+    </section>
+
+    <section class="panel" id="p-itin" hidden>
+      <p class="note">Choisissez deux localités ou sites. Cliquer la carte avec « Point sur la carte » fonctionne aussi.</p>
+      <div class="field"><label for="it-a">Départ</label><input id="it-a" list="places" placeholder="ex. Ouagadougou"></div>
+      <div class="field"><label for="it-b">Arrivée</label><input id="it-b" list="places" placeholder="ex. Fada N'Gourma"></div>
+      <datalist id="places"></datalist>
+      <div class="row2">
+        <div class="field"><label for="it-buf">Corridor d’analyse (km)</label><input id="it-buf" type="number" min="1" max="100" value="15"></div>
+        <div class="field"><label for="it-eng">Calcul</label><select id="it-eng"><option value="auto">Routier en ligne, sinon intégré</option><option value="local">Réseau intégré (hors ligne)</option></select></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn primary" id="it-go" type="button">Calculer l’itinéraire</button><button class="btn" id="it-pick" type="button" aria-pressed="false">Point sur la carte</button><button class="btn" id="it-clear" type="button">Effacer</button></div>
+      <div id="it-res"></div>
+    </section>
+
+    <section class="panel" id="p-mission" hidden>
+      <p class="h">Trajet de mission</p>
+      <p class="note noprint">Ajoutez les étapes dans l’ordre : localités, sites (bouton « Ajouter au trajet » de la fiche) ou point sur la carte.</p>
+      <div class="field noprint"><label for="ms-add">Ajouter une étape</label><div style="display:flex;gap:6px"><input id="ms-add" list="places" placeholder="Localité ou site"><button class="btn" id="ms-add-go" type="button">Ajouter</button></div></div>
+      <div class="stops" id="ms-stops"></div>
+      <div class="row3 noprint">
+        <div class="field"><label for="ms-date">Départ</label><input id="ms-date" type="datetime-local"></div>
+        <div class="field"><label for="ms-speed">Vitesse (km/h)</label><input id="ms-speed" type="number" min="20" max="120" value="60"></div>
+        <div class="field"><label for="ms-halt">Arrêt (min)</label><input id="ms-halt" type="number" min="0" max="600" value="45"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" class="noprint"><button class="btn primary" id="ms-go" type="button">Calculer le trajet</button><button class="btn" id="ms-clear" type="button">Vider</button><button class="btn" id="ms-xlsx" type="button" disabled>Fiche mission (Excel)</button><button class="btn" id="ms-print" type="button" disabled>Imprimer</button></div>
+      <div id="ms-res"></div>
+    </section>
+
+    <section class="panel" id="p-couches" hidden>
+      <p class="h">Fond de carte</p>
+      <div class="chips" id="bases"></div>
+      <p class="h">Couches</p>
+      <div class="chips" id="lyr"></div>
+      <p class="h">Couleur des régions</p>
+      <div class="chips" id="choro"></div>
+      <p class="note">Sources : geoBoundaries (CC BY 4.0) et Natural Earth pour les limites, routes et localités. Fond « Plan » : © OpenStreetMap contributors, © CARTO. Fond « Satellite » : Esri, Maxar, Earthstar Geographics. Itinéraire en ligne : OSRM (données OpenStreetMap).</p>
+      <p class="note" id="data-note"></p>
+    </section>
+  </aside>
+  <div class="mapwrap"><div id="map" aria-label="Carte"></div></div>
+</div>
+
+<script src="lib/leaflet.js"></script>
+<script src="lib/leaflet.markercluster.js"></script>
+<script defer src="lib/xlsx.full.min.js"></script>
+<script>
+const DATA = /*__DATA__*/null;
+(() => {
+"use strict";
+/* ================= Utilitaires ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (n, d = 0) => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const R = Math.PI / 180;
+const hav = (la1, lo1, la2, lo2) => { const h = Math.sin((la2 - la1) * R / 2) ** 2 + Math.cos(la1 * R) * Math.cos(la2 * R) * Math.sin((lo2 - lo1) * R / 2) ** 2; return 2 * 6371 * Math.asin(Math.sqrt(h)); };
+const dms = (v, pos, neg) => { const a = Math.abs(v), d = Math.floor(a), m = Math.floor((a - d) * 60), s = ((a - d) * 60 - m) * 60; return `${d}°${String(m).padStart(2, "0")}′${s.toFixed(1).padStart(4, "0")}″${v >= 0 ? pos : neg}`; };
+const iso2 = d => d.toISOString().slice(0, 10);
+const frDate = s => s ? s.slice(0, 10).split("-").reverse().join("/") : "—";
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } } };
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3200); }
+function parseDate(v) {
+  if (v == null || v === "") return "";
+  if (typeof v === "number" && v > 20000 && v < 80000) return iso2(new Date(Date.UTC(1899, 11, 30) + v * 864e5));
+  if (v instanceof Date) return iso2(v);
+  const s = String(v).trim(); let m;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return `${m[1]}-${m[2]}-${m[3]}`;
+  if ((m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/))) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; return `${y}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`; }
+  return "";
+}
+const num = v => { const x = parseFloat(String(v ?? "").replace(/\s/g, "").replace(",", ".")); return isFinite(x) ? x : null; };
+const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+const pick = (o, ...res) => { for (const re of res) { const k = Object.keys(o).find(k => re.test(norm(k))); if (k !== undefined && o[k] !== "" && o[k] != null) return o[k]; } return undefined; };
+
+/* ================= Géographie ================= */
+const G = DATA.geo;
+function bboxOf(geom) { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const polys = geom.type === "Polygon" ? [geom.coordinates] : geom.coordinates; polys.forEach(p => p[0].forEach(([x, y]) => { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; })); return [x0, y0, x1, y1]; }
+function inRing(x, y, ring) { let inside = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside; } return inside; }
+function inGeom(x, y, g) { const polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates; return polys.some(p => inRing(x, y, p[0]) && !p.slice(1).some(h => inRing(x, y, h))); }
+[G.countries, G.regions, G.subs].forEach(fc => fc.features.forEach(f => f.bb = bboxOf(f.geometry)));
+const findIn = (fc, lon, lat, iso) => fc.features.find(f => (!iso || f.properties.iso === iso) && lon >= f.bb[0] && lon <= f.bb[2] && lat >= f.bb[1] && lat <= f.bb[3] && inGeom(lon, lat, f.geometry));
+function geocode(lat, lon) {
+  const c = findIn(G.countries, lon, lat); const iso = c ? c.properties.iso : "";
+  const r = ["BFA", "MLI", "NER"].includes(iso) ? findIn(G.regions, lon, lat, iso) : null, p = r ? findIn(G.subs, lon, lat, iso) : null;
+  return { iso, region: r ? r.properties.name : "", province: p ? p.properties.name : "" };
+}
+const COUNTRY = { BFA: "Burkina Faso", MLI: "Mali", NER: "Niger" };
+const ISO_OF = { "burkina faso": "BFA", burkina: "BFA", mali: "MLI", niger: "NER" };
+
+/* ================= Données ================= */
+const BASE_SITES = DATA.sites.map(s => ({ ...s, src: "base" }));
+let IMP_SITES = store.get("ss-sites", []);
+let IMP_INC = store.get("ss-inc", []);
+const MALI_INC = DATA.incidents_mali.map((i, k) => ({ ...i, id: "ML-" + (k + 1), grave: i.tues > 0, tues: i.tues || 0, blesses: 0, localite: (i.description || "").split(" — ")[0], ...geocode(i.lat, i.lon) }));
+let SITES = [], INC = [];
+const POST = [
+  { k: "normal", label: "Normal", v: "--normal" }, { k: "attention", label: "Attention", v: "--attention" },
+  { k: "veille", label: "Veille renforcée", v: "--veille" }, { k: "adapt", label: "Adaptation opérationnelle", v: "--adapt" },
+];
+const PRANK = { normal: 0, attention: 1, veille: 2, adapt: 3 };
+const state = { iso: "", reg: "", prov: "", zone: "", qc: "", post: new Set(POST.map(p => p.k)), d0: "", d1: "", itype: "", grave: false, useMali: store.get("ss-mali", false), r1: 10, r2: 25, r3: 50, period: "all" };
+const view = { base: "epure", lyr: { sites: true, cluster: true, incidents: true, rings: true, regions: true, subs: false, roads: true, rivers: true, towns: true, labels: true }, choro: "none", selected: null };
+function rebuild() {
+  const ids = new Set(IMP_SITES.map(s => String(s.id)));
+  SITES = BASE_SITES.filter(s => !ids.has(String(s.id))).concat(IMP_SITES);
+  INC = (state.useMali ? MALI_INC : []).concat(IMP_INC);
+}
+rebuild();
+
+/* ================= Niveau de sûreté ================= */
+const incInPeriod = () => INC.filter(i => (!state.d0 || (i.date && i.date >= state.d0)) && (!state.d1 || (i.date && i.date <= state.d1)) && (!state.itype || i.type === state.itype) && (!state.grave || i.grave));
+let POSTURE = new Map(), PER = [];
+function computePosture() {
+  PER = incInPeriod();
+  POSTURE = new Map();
+  const { r1, r2, r3 } = state;
+  SITES.forEach(s => {
+    let n1 = 0, n2 = 0, n3 = 0, g1 = 0, g2 = 0, dmin = Infinity, dgrave = Infinity, near = null;
+    for (const i of PER) {
+      if (Math.abs(i.lat - s.lat) > 3 || Math.abs(i.lon - s.lon) > 3) continue;
+      const d = hav(s.lat, s.lon, i.lat, i.lon);
+      if (d < dmin) { dmin = d; near = i; }
+      if (i.approx) { if (d <= r3) n3++; continue; } // position approximative : n'élève pas au-delà d'« Attention »
+      if (i.grave && d < dgrave) dgrave = d;
+      if (d <= r1) { n1++; if (i.grave) g1++; }
+      if (d <= r2) { n2++; if (i.grave) g2++; }
+      if (d <= r3) n3++;
+    }
+    const k = g1 || n1 >= 3 ? "adapt" : g2 || n2 >= 2 ? "veille" : n3 ? "attention" : "normal";
+    POSTURE.set(s.id, { k, n1, n2, n3, dmin, dgrave, near });
+  });
+}
+const postOf = s => (POSTURE.get(s.id) || { k: "normal" }).k;
+const cssv = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const postColor = k => cssv(POST.find(p => p.k === k).v);
+
+/* ================= Filtres ================= */
+function sitesF() {
+  return SITES.filter(s => (!state.iso || s.iso === state.iso) && (!state.reg || s.region === state.reg) && (!state.prov || s.province === state.prov) &&
+    (!state.zone || (s.zone || "") === state.zone) && (!state.qc || (state.qc === "ok" ? s.qc === "OK" : s.qc !== "OK")) && state.post.has(postOf(s)));
+}
+const incF = () => PER.filter(i => (!state.iso || i.iso === state.iso) && (!state.reg || i.region === state.reg) && (!state.prov || i.province === state.prov));
+function fillSelect(sel, values, cur, all = "Toutes") { sel.innerHTML = `<option value="">${all}</option>` + values.map(v => `<option ${v === cur ? "selected" : ""}>${esc(v)}</option>`).join(""); }
+function refreshFilterOptions() {
+  const regs = [...new Set(G.regions.features.filter(f => !state.iso || f.properties.iso === state.iso).map(f => f.properties.name))].sort((a, b) => a.localeCompare(b, "fr"));
+  if (state.reg && !regs.includes(state.reg)) state.reg = "";
+  fillSelect($("#f-reg"), regs, state.reg);
+  const regIso = state.reg ? (G.regions.features.find(f => f.properties.name === state.reg) || {}).properties?.iso : state.iso;
+  const regFeat = state.reg ? G.regions.features.find(f => f.properties.name === state.reg && (!state.iso || f.properties.iso === state.iso)) : null;
+  let provs = G.subs.features.filter(f => !regIso || f.properties.iso === regIso);
+  if (regFeat) { const inReg = new Set(SITES.filter(s => s.region === state.reg).map(s => s.province)); provs = provs.filter(f => inReg.has(f.properties.name) || (f.bb[0] >= regFeat.bb[0] - .01 && f.bb[2] <= regFeat.bb[2] + .01 && f.bb[1] >= regFeat.bb[1] - .01 && f.bb[3] <= regFeat.bb[3] + .01)); }
+  const pnames = [...new Set(provs.map(f => f.properties.name))].sort((a, b) => a.localeCompare(b, "fr"));
+  if (state.prov && !pnames.includes(state.prov)) state.prov = "";
+  fillSelect($("#f-prov"), pnames, state.prov);
+  fillSelect($("#f-zone"), [...new Set(SITES.filter(s => !state.iso || s.iso === state.iso).map(s => s.zone).filter(Boolean))].sort(), state.zone);
+  fillSelect($("#f-itype"), [...new Set(INC.map(i => i.type).filter(Boolean))].sort(), state.itype, "Tous");
+}
+function initFilters() {
+  $("#f-post").innerHTML = POST.map(p => `<button type="button" class="chip" data-k="${p.k}" aria-pressed="true" style="--c:var(${p.v})"><span class="dot" style="--c:var(${p.v})"></span>${p.label}</button>`).join("");
+  $("#f-post").onclick = e => { const b = e.target.closest(".chip"); if (!b) return; const k = b.dataset.k; state.post.has(k) ? state.post.delete(k) : state.post.add(k); b.setAttribute("aria-pressed", state.post.has(k)); update(); };
+  $("#f-iso").onchange = e => { state.iso = e.target.value; state.reg = state.prov = ""; refreshFilterOptions(); update(); fitFilter(); };
+  $("#f-reg").onchange = e => { state.reg = e.target.value; state.prov = ""; refreshFilterOptions(); update(); fitFilter(); };
+  $("#f-prov").onchange = e => { state.prov = e.target.value; update(); fitFilter(); };
+  $("#f-zone").onchange = e => { state.zone = e.target.value; update(); };
+  $("#f-qc").onchange = e => { state.qc = e.target.value; update(); };
+  $("#f-itype").onchange = e => { state.itype = e.target.value; recompute(); };
+  $("#f-grave").onchange = e => { state.grave = e.target.checked; recompute(); };
+  $("#f-d0").onchange = e => { state.d0 = e.target.value; state.period = "custom"; renderPeriods(); recompute(); };
+  $("#f-d1").onchange = e => { state.d1 = e.target.value; state.period = "custom"; renderPeriods(); recompute(); };
+  $("#f-fit").onclick = fitFilter;
+  $("#f-reset").onclick = () => { Object.assign(state, { iso: "", reg: "", prov: "", zone: "", qc: "", itype: "", grave: false }); state.post = new Set(POST.map(p => p.k)); ["#f-iso", "#f-zone", "#f-qc"].forEach(s => $(s).value = ""); $("#f-grave").checked = false; document.querySelectorAll("#f-post .chip").forEach(c => c.setAttribute("aria-pressed", "true")); setPeriod("all"); refreshFilterOptions(); recompute(); fitFilter(); };
+}
+
+/* ================= Périodes ================= */
+function periodDefs() {
+  const dates = INC.map(i => i.date).filter(Boolean).sort();
+  if (!dates.length) return [];
+  const last = new Date(dates[dates.length - 1] + "T00:00:00Z"), y = last.getUTCFullYear(), m = last.getUTCMonth();
+  const mname = last.toLocaleDateString("fr-FR", { month: "short", timeZone: "UTC" }).replace(".", "");
+  const mlong = last.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" });
+  const endM = new Date(Date.UTC(y, m + 1, 0));
+  const d = (yy, mm, dd) => iso2(new Date(Date.UTC(yy, mm, dd)));
+  return [
+    { k: "q2", label: `Q2 ${mname}.`, d0: d(y, m, 16), d1: iso2(endM) },
+    { k: "q1", label: `Q1 ${mname}.`, d0: d(y, m, 1), d1: d(y, m, 15) },
+    { k: "m", label: mlong[0].toUpperCase() + mlong.slice(1), d0: d(y, m, 1), d1: iso2(endM) },
+    { k: "90", label: "90 j", d0: iso2(new Date(last - 89 * 864e5)), d1: iso2(last) },
+    { k: "all", label: "Tout", d0: "", d1: "" },
+  ];
+}
+function defaultPeriod() { const d = periodDefs(); if (!d.length) return "all"; const last = INC.map(i => i.date).filter(Boolean).sort().pop(); return +last.slice(8, 10) <= 15 ? "q1" : "q2"; }
+function setPeriod(k) {
+  const p = periodDefs().find(x => x.k === k) || { k: "all", d0: "", d1: "" };
+  state.period = p.k; state.d0 = p.d0; state.d1 = p.d1; $("#f-d0").value = p.d0; $("#f-d1").value = p.d1; renderPeriods();
+}
+function renderPeriods() {
+  const defs = periodDefs();
+  $("#periods").innerHTML = defs.length ? defs.map(p => `<button type="button" data-k="${p.k}" aria-pressed="${state.period === p.k}">${esc(p.label)}</button>`).join("") : `<button type="button" disabled>Aucune période</button>`;
+  $("#periods").onclick = e => { const b = e.target.closest("button[data-k]"); if (!b) return; setPeriod(b.dataset.k); recompute(); };
+  const dates = PER.map(i => i.date).filter(Boolean).sort();
+  const a = state.d0 || dates[0], b = state.d1 || dates[dates.length - 1];
+  $("#datechip").textContent = INC.length ? (a && b ? `${frDate(a)} → ${frDate(b)} · ${Math.round((new Date(b) - new Date(a)) / 864e5) + 1} j` : "Toute la période") : "Aucun incident chargé";
+}
+
+/* ================= Carte ================= */
+let map, layers = {}, tiles = null, siteLayer, siteMarkers = new Map();
+const BASES = {
+  epure: { label: "Épuré", url: null },
+  plan: { label: "Plan détaillé", url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", attr: "© OpenStreetMap contributors © CARTO" },
+  sat: { label: "Satellite", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attr: "Imagerie © Esri, Maxar, Earthstar Geographics" },
+};
+const isDark = () => { const c = cssv("--bg").replace("#", ""); return parseInt(c.slice(0, 2), 16) < 80; };
+function initMap() {
+  map = L.map("map", { zoomControl: false, preferCanvas: true, minZoom: 4, maxZoom: 18, zoomSnap: .25, worldCopyJump: false, attributionControl: true }).setView([14.5, -1.5], 5.5);
+  map.attributionControl.setPrefix(false);
+  ["countries", "regions", "subs", "water", "roads", "route", "inc", "labels"].forEach((p, k) => { map.createPane(p); map.getPane(p).style.zIndex = 300 + k * 10; });
+  map.getPane("labels").style.pointerEvents = "none";
+  map.getPane("route").style.zIndex = 470; map.getPane("inc").style.zIndex = 460;
+  L.control.zoom({ position: "topleft" }).addTo(map);
+  const QZ = L.Control.extend({ options: { position: "topleft" }, onAdd() {
+    const d = L.DomUtil.create("div", "qz"); L.DomEvent.disableClickPropagation(d);
+    d.innerHTML = [["3P", "Burkina Faso, Mali, Niger"], ["BF", "Burkina Faso"], ["ML", "Mali"], ["NE", "Niger"], ["Ouaga", "Ouagadougou"], ["Bamako", "Bamako"], ["Niamey", "Niamey"]].map(([k, t]) => `<button type="button" data-z="${k}" title="${t}">${k}</button>`).join("");
+    d.onclick = e => { const b = e.target.closest("button"); if (!b) return; const z = b.dataset.z; const c = { Ouaga: [12.37, -1.52, 11], Bamako: [12.64, -8.0, 11], Niamey: [13.51, 2.11, 11] }[z]; if (c) map.flyTo([c[0], c[1]], c[2]); else fitCountries(z === "3P" ? ["BFA", "MLI", "NER"] : [{ BF: "BFA", ML: "MLI", NE: "NER" }[z]]); };
+    return d; } });
+  new QZ().addTo(map);
+  const LEG = L.Control.extend({ options: { position: "topright" }, onAdd() { const d = L.DomUtil.create("details", "legend"); d.id = "legend"; L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d); return d; } });
+  new LEG().addTo(map);
+  L.control.scale({ position: "bottomright", imperial: false, maxWidth: 140 }).addTo(map);
+  const NORTH = L.Control.extend({ options: { position: "bottomright" }, onAdd() { const d = L.DomUtil.create("div"); d.innerHTML = `<svg class="north" viewBox="0 0 30 40" aria-label="Nord"><path d="M15 2 L24 30 L15 24 L6 30 Z" fill="currentColor"/><path d="M15 2 L15 24 L6 30 Z" fill="currentColor" opacity=".45"/><text x="15" y="39" text-anchor="middle" font-size="9" font-family="IBM Plex Mono, monospace" fill="currentColor">N</text></svg>`; return d; } });
+  new NORTH().addTo(map);
+  const CO = L.Control.extend({ options: { position: "bottomleft" }, onAdd() { const d = L.DomUtil.create("div", "coords"); d.id = "coords"; d.textContent = "Survolez la carte"; return d; } });
+  new CO().addTo(map);
+  map.on("mousemove", e => { const { lat, lng } = e.latlng; $("#coords").textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)} · ${dms(lat, "N", "S")} ${dms(lng, "E", "O")}`; });
+  map.on("zoomend", () => { renderLabels(); });
+  map.on("click", onMapClick);
+  watchMapSize();
+  if (typeof L.markerClusterGroup !== "function") { view.lyr.cluster = false; siteLayer = L.layerGroup(); }
+  else siteLayer = L.markerClusterGroup({ chunkedLoading: true, showCoverageOnHover: false, maxClusterRadius: 46, disableClusteringAtZoom: 11, spiderfyOnMaxZoom: true,
+    iconCreateFunction: c => { const ms = c.getAllChildMarkers(); let worst = 0; ms.forEach(m => { worst = Math.max(worst, PRANK[postOf(m.site)]); }); const n = c.getChildCount(); const s = n < 10 ? 28 : n < 100 ? 34 : n < 500 ? 42 : 50; const col = postColor(POST[worst].k);
+      return L.divIcon({ html: `<div class="cl" style="width:${s}px;height:${s}px;background:${col}">${n}</div>`, className: "", iconSize: [s, s] }); } });
+  drawBase();
+  setBase(view.base);
+}
+function vstyle() {
+  return { land: cssv("--land"), focus: cssv("--focus"), border: cssv("--border"), adm: cssv("--adm"), road: cssv("--road"), river: cssv("--river"), accent: cssv("--accent"), ink: cssv("--ink") };
+}
+function drawBase() {
+  Object.values(layers).forEach(l => l && map.removeLayer(l));
+  const c = vstyle(), online = view.base !== "epure";
+  layers.countries = L.geoJSON(G.countries, { pane: "countries", interactive: false, style: f => ({ color: f.properties.focus ? c.border : c.adm, weight: f.properties.focus ? 1.6 : .9, fillColor: f.properties.focus ? c.focus : c.land, fillOpacity: online ? 0 : 1 }) });
+  layers.water = L.layerGroup([L.geoJSON(G.rivers, { pane: "water", interactive: false, style: { color: c.river, weight: 1.1, opacity: .8 } }), L.geoJSON(G.lakes, { pane: "water", interactive: false, style: { color: c.river, weight: .5, fillColor: c.river, fillOpacity: .5 } })]);
+  layers.roads = L.geoJSON(G.roads, { pane: "roads", interactive: false, style: f => ({ color: c.road, weight: f.properties.major ? 1.4 : .7, opacity: .85 }) });
+  layers.regions = L.geoJSON(G.regions, { pane: "regions", style: regionStyle, onEachFeature: (f, l) => { l.on("click", ev => { if (measuring || picking) return; L.DomEvent.stopPropagation(ev); state.iso = f.properties.iso; state.reg = f.properties.name; state.prov = ""; $("#f-iso").value = state.iso; refreshFilterOptions(); update(); fitFilter(); }); l.bindTooltip(() => regionTip(f), { sticky: true, direction: "top", opacity: .95 }); } });
+  layers.subs = L.geoJSON(G.subs, { pane: "subs", interactive: false, style: { color: c.adm, weight: .6, dashArray: "3 3", fill: false } });
+  layers.countryBorder = L.geoJSON({ type: "FeatureCollection", features: G.countries.features.filter(f => f.properties.focus) }, { pane: "roads", interactive: false, style: { color: online ? "#ffffff" : c.border, weight: online ? 2.2 : 1.8, fill: false, opacity: .95 } });
+  applyLayers();
+}
+function regionStats() {
+  const st = {};
+  sitesF().forEach(s => { const k = s.iso + "|" + s.region; (st[k] ||= { sites: 0, worst: 0, adapt: 0, veille: 0 }).sites++; const r = PRANK[postOf(s)]; st[k].worst = Math.max(st[k].worst, r); if (r === 3) st[k].adapt++; if (r === 2) st[k].veille++; });
+  incF().forEach(i => { const k = i.iso + "|" + i.region; (st[k] ||= { sites: 0, worst: 0, adapt: 0, veille: 0 }); st[k].inc = (st[k].inc || 0) + 1; if (i.grave) st[k].grave = (st[k].grave || 0) + 1; st[k].tues = (st[k].tues || 0) + (i.tues || 0); });
+  return st;
+}
+function regionLevel(s) { if (!s) return 0; const g = s.grave || 0, n = s.inc || 0, t = s.tues || 0; return g >= 3 || t >= 10 ? 3 : g >= 1 || n >= 5 ? 2 : n >= 1 ? 1 : 0; }
+const LEVELS = [["Faible", "--normal"], ["Modéré", "--attention"], ["Élevé", "--veille"], ["Critique", "--adapt"]];
+let RSTATS = {};
+function regionStyle(f) {
+  const c = vstyle(), k = f.properties.iso + "|" + f.properties.name, s = RSTATS[k], sel = state.reg === f.properties.name;
+  let fill = "transparent", op = 0;
+  if (view.choro === "threat" && s && (s.inc || 0)) { fill = cssv(LEVELS[regionLevel(s)][1]); op = .28; }
+  else if (view.choro === "sites" && s && s.sites) { fill = c.accent; op = Math.min(.55, .08 + .47 * Math.sqrt(s.sites / Math.max(1, ...Object.values(RSTATS).map(x => x.sites || 0)))); }
+  return { color: sel ? c.accent : c.adm, weight: sel ? 2.4 : .9, fillColor: fill, fillOpacity: op, opacity: .9 };
+}
+function regionTip(f) { const s = RSTATS[f.properties.iso + "|" + f.properties.name] || {}; return `<b>${esc(f.properties.name)}</b> · ${COUNTRY[f.properties.iso]}<br>${fmt(s.sites || 0)} site(s) · ${fmt(s.inc || 0)} incident(s)${s.grave ? ` dont ${s.grave} grave(s)` : ""}<br>Niveau : ${LEVELS[regionLevel(s)][0]}`; }
+function setBase(b) {
+  view.base = b;
+  if (tiles) { map.removeLayer(tiles); tiles = null; }
+  const B = BASES[b];
+  let tileErr = 0;
+  if (B.url) { tiles = L.tileLayer(isDark() && B.dark ? B.dark : B.url, { attribution: B.attr, maxZoom: 19, subdomains: "abcd", detectRetina: true }); tiles.on("tileerror", () => { tileErr++; if (tileErr === 8) { toast("Fond en ligne indisponible : retour au fond épuré."); setBase("epure"); } }); tiles.addTo(map); }
+  map.attributionControl.addAttribution("geoBoundaries · Natural Earth");
+  drawBase(); renderLabels(); renderBaseChips();
+}
+function applyLayers() {
+  const L_ = view.lyr;
+  [["countries", true], ["water", L_.rivers], ["roads", L_.roads], ["regions", L_.regions], ["subs", L_.subs], ["countryBorder", true]].forEach(([k, on]) => { if (!layers[k]) return; on ? layers[k].addTo(map) : map.removeLayer(layers[k]); });
+}
+let labelLayer = null;
+function renderLabels() {
+  if (labelLayer) map.removeLayer(labelLayer);
+  labelLayer = L.layerGroup();
+  const z = map.getZoom();
+  if (view.lyr.labels) G.labels.forEach(l => { if ((l.focus && z < 7.5) || (!l.focus && z >= 5)) labelLayer.addLayer(L.marker([l.lat, l.lon], { pane: "labels", interactive: false, icon: L.divIcon({ className: "", html: `<div class="lbl-country ${l.focus ? "focus" : ""}" style="transform:translate(-50%,-50%)">${esc(l.name)}</div>`, iconSize: [0, 0] }) })); });
+  if (view.lyr.labels && z >= 6.5 && z < 9.5) G.regions.features.forEach(f => { if (state.iso && f.properties.iso !== state.iso) return; const b = f.bb; labelLayer.addLayer(L.marker([(b[1] + b[3]) / 2, (b[0] + b[2]) / 2], { pane: "labels", interactive: false, icon: L.divIcon({ className: "", html: `<div class="lbl-region" style="transform:translate(-50%,-50%)">${esc(f.properties.name)}</div>`, iconSize: [0, 0] }) })); });
+  if (view.lyr.towns) DATA.places.forEach(p => {
+    const show = p.rank === 1 || (p.rank === 2 && z >= 6) || (p.rank === 3 && z >= 7) || (p.rank === 4 && z >= 9.5);
+    if (show) labelLayer.addLayer(L.marker([p.lat, p.lon], { pane: "labels", interactive: false, icon: L.divIcon({ className: "", html: `<div class="lbl-town ${p.rank === 1 ? "cap" : ""}" style="transform:translate(-4px,-50%)"><i></i>${esc(p.name)}</div>`, iconSize: [0, 0] }) }));
+  });
+  labelLayer.addTo(map);
+}
+function siteMarker(s) {
+  const k = postOf(s);
+  const m = L.circleMarker([s.lat, s.lon], { radius: s.qc !== "OK" ? 6.5 : 6, color: s.qc !== "OK" ? cssv("--info") : "#1d2426", weight: s.qc !== "OK" ? 2.2 : 1.6, fillColor: postColor(k), fillOpacity: 1 });
+  m.site = s;
+  m.bindPopup(() => sitePopup(s), { maxWidth: 320 });
+  m.on("popupopen", () => { view.selected = s.id; try { history.replaceState(null, "", "#site-" + s.id); } catch (e) { /* facultatif */ } });
+  return m;
+}
+function renderSites() {
+  siteLayer.clearLayers(); siteMarkers.clear();
+  if (map.hasLayer(siteLayer)) map.removeLayer(siteLayer);
+  if (view.plainSites) { map.removeLayer(view.plainSites); view.plainSites = null; }
+  if (!view.lyr.sites) return;
+  const ms = sitesF().map(s => { const m = siteMarker(s); siteMarkers.set(s.id, m); return m; });
+  if (view.lyr.cluster && siteLayer.addLayers) { siteLayer.addLayers(ms); siteLayer.addTo(map); }
+  else { view.plainSites = L.layerGroup(ms).addTo(map); }
+}
+function renderIncidents() {
+  if (layers.inc) map.removeLayer(layers.inc);
+  layers.inc = L.layerGroup();
+  if (view.lyr.incidents) incF().forEach(i => {
+    const red = cssv("--adapt"), org = cssv("--veille");
+    if (i.grave && !i.approx && view.lyr.rings) [18, 12].forEach(r => layers.inc.addLayer(L.circleMarker([i.lat, i.lon], { pane: "inc", radius: r, color: red, weight: 1.4, dashArray: "4 3", fill: false, interactive: false })));
+    const m = i.approx ? L.circleMarker([i.lat, i.lon], { pane: "inc", radius: i.grave ? 8 : 5, color: i.grave ? red : org, weight: 2, dashArray: "3 2", fillColor: cssv("--surface"), fillOpacity: .9 })
+      : L.circleMarker([i.lat, i.lon], { pane: "inc", radius: i.grave ? 8 : 5, color: "#ffffff", weight: 1.6, fillColor: i.grave ? red : org, fillOpacity: 1 });
+    m.bindPopup(incPopup(i), { maxWidth: 320 }); layers.inc.addLayer(m);
+  });
+  layers.inc.addTo(map);
+}
+function sitePopup(s) {
+  const p = POSTURE.get(s.id) || {}, post = POST.find(x => x.k === (p.k || "normal"));
+  return `<div class="pop"><h4>${esc(s.nom)}</h4><div class="m">n° ${s.id} · ${esc(s.ville)} · ${esc(COUNTRY[s.iso] || s.pays)}</div>
+    <dl><dt>Niveau</dt><dd><span class="lvl" style="--c:var(${post.v})">${post.label}</span></dd><dt>Région</dt><dd>${esc(s.region)} / ${esc(s.province)}</dd><dt>Adresse</dt><dd>${esc(s.adresse || "—")}</dd><dt>Zone</dt><dd>${esc(s.zone || "—")}</dd>
+    <dt>Incidents</dt><dd>${PER.length ? `${p.n1 || 0} à ≤ ${state.r1} km · ${p.n3 || 0} à ≤ ${state.r3} km${isFinite(p.dmin) ? `<br>Le plus proche : ${fmt(p.dmin, 1)} km` : ""}` : "aucun chargé"}</dd>
+    <dt>Position</dt><dd class="mono" style="font-size:.78rem">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}${s.qc !== "OK" ? `<br><span class="warn">${esc(s.qc)}</span>` : ""}</dd></dl>
+    <div class="acts"><button class="btn sm" type="button" onclick="SS.toMission('site:${s.id}')">Ajouter au trajet</button><button class="btn sm" type="button" onclick="SS.itinFrom('site:${s.id}')">Itinéraire depuis</button><a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}" target="_blank" rel="noopener">Google Maps ↗</a></div></div>`;
+}
+function incPopup(i) {
+  return `<div class="pop"><h4>${esc(i.type || "Incident")}${i.grave ? ` <span class="lvl" style="--c:var(--adapt)">grave</span>` : ""}</h4><div class="m">${frDate(i.date)} · ${esc(i.localite || "")} · ${esc(i.region || "")}</div>
+    <p style="margin:6px 0 0;font-size:.86rem">${esc((i.description || "").slice(0, 280))}</p><dl><dt>Bilan</dt><dd>${i.tues || 0} tué(s) · ${i.blesses || 0} blessé(s)</dd>${i.prec ? `<dt>Position</dt><dd>${esc(i.prec)}${i.approx ? ` <span class="warn">(approximative)</span>` : ""}</dd>` : ""}${i.auteur ? `<dt>Auteur</dt><dd>${esc(i.auteur)}</dd>` : ""}<dt>Source</dt><dd>${esc(i.source || "—")}</dd></dl></div>`;
+}
+let fitted = false;
+function mapReady() { const el = map.getContainer(); return el.clientWidth > 50 && el.clientHeight > 50; }
+function initialFit() { if (mapReady()) { map.invalidateSize({ pan: false }); fitCountries(["BFA", "MLI", "NER"], false); fitted = true; } }
+// Leaflet mémorise la taille du conteneur à l'init : si la page n'est pas encore mise en page
+// (onglet en arrière-plan, aperçu de lien, réseau lent), le canevas naît à 0 px de haut et rien ne s'affiche.
+function watchMapSize() {
+  const el = map.getContainer(); let t = null, last = "";
+  const refresh = () => {
+    const sz = el.clientWidth + "x" + el.clientHeight; if (sz === last) return; last = sz;
+    map.invalidateSize({ pan: false });
+    if (!fitted && !location.hash) initialFit();
+    if (siteLayer && map.hasLayer(siteLayer) && siteLayer.refreshClusters) siteLayer.refreshClusters();
+  };
+  const later = () => { clearTimeout(t); t = setTimeout(refresh, 80); };
+  if (window.ResizeObserver) new ResizeObserver(later).observe(el);
+  ["load", "pageshow", "orientationchange"].forEach(ev => window.addEventListener(ev, later));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) later(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(later);
+  [300, 1000, 2500].forEach(ms => setTimeout(later, ms));
+}
+function fitCountries(isos, animate = true) {
+  const fs = G.countries.features.filter(f => isos.includes(f.properties.iso)); if (!fs.length) return;
+  const b = L.geoJSON({ type: "FeatureCollection", features: fs }).getBounds();
+  if (animate) map.flyToBounds(b, { padding: [20, 20], duration: .8 }); else map.fitBounds(b, { padding: [20, 20], animate: false });
+}
+function fitFilter() {
+  if (state.prov) { const f = G.subs.features.find(f => f.properties.name === state.prov && (!state.iso || f.properties.iso === state.iso)); if (f) return map.flyToBounds(L.geoJSON(f).getBounds(), { padding: [30, 30], duration: .8 }); }
+  if (state.reg) { const f = G.regions.features.find(f => f.properties.name === state.reg && (!state.iso || f.properties.iso === state.iso)); if (f) return map.flyToBounds(L.geoJSON(f).getBounds(), { padding: [30, 30], duration: .8 }); }
+  fitCountries(state.iso ? [state.iso] : ["BFA", "MLI", "NER"]);
+}
+function renderLegend() {
+  const leg = $("#legend"); if (!leg) return;
+  const open = leg.open;
+  leg.innerHTML = `<summary>LÉGENDE</summary><div class="in">
+    <span class="lbl">Niveau de sûreté des sites</span>${POST.map(p => `<div class="r"><span class="dot" style="--c:var(${p.v})"></span>${p.label}</div>`).join("")}
+    <div class="r"><span class="dot" style="--c:var(--surface);border:2px solid var(--info)"></span>Position corrigée ou à vérifier</div>
+    <div class="r"><span class="cl" style="width:20px;height:20px;background:var(--veille);font-size:9px">12</span>Groupe de sites (couleur du plus exposé)</div>
+    <span class="lbl" style="margin-top:4px">Incidents</span><div class="r"><span class="dot" style="--c:var(--adapt);box-shadow:0 0 0 3px var(--surface),0 0 0 4.5px var(--adapt)"></span>Incident grave</div><div class="r"><span class="dot" style="--c:var(--veille)"></span>Autre incident</div><div class="r"><span class="dot" style="--c:var(--surface);border:2px dashed var(--adapt)"></span>Position approximative (commune ou province)</div>
+    ${view.choro === "threat" ? `<span class="lbl" style="margin-top:4px">Niveau des régions</span>` + LEVELS.map(l => `<div class="r"><span class="dot" style="--c:var(${l[1]});border-radius:2px;opacity:.6"></span>${l[0]}</div>`).join("") : ""}
+    ${view.route ? `<span class="lbl" style="margin-top:4px">Itinéraire</span><div class="r"><span style="width:22px;height:4px;background:var(--normal);display:inline-block"></span>Tronçon sans incident proche</div><div class="r"><span style="width:22px;height:4px;background:var(--adapt);display:inline-block"></span>Tronçon exposé</div>` : ""}
+    <p class="note" style="margin:4px 0 0">Règles : adaptation si incident grave à ≤ ${state.r1} km ou 3 incidents ; veille si grave à ≤ ${state.r2} km ou 2 incidents ; attention si un incident à ≤ ${state.r3} km. Un incident à position approximative ne fait passer un site qu’en « Attention ».</p></div>`;
+  leg.open = open;
+}
+
+/* ================= Synthèse ================= */
+function renderSynthese() {
+  const S = sitesF(), I = incF(), n = S.length;
+  const cnt = k => S.filter(s => postOf(s) === k).length;
+  const pct = (a, b) => { const v = 100 * a / b; return v === 100 ? "100" : fmt(Math.floor(v * 10) / 10, 1); }; // jamais « 100 % » s'il reste un site hors Normal/Attention
+  const na = cnt("normal") + cnt("attention"), ad = cnt("adapt"), ve = cnt("veille");
+  const graves = I.filter(i => i.grave), tues = I.reduce((a, i) => a + (i.tues || 0), 0), bl = I.reduce((a, i) => a + (i.blesses || 0), 0);
+  let gmin = Infinity, gsite = null, ginc = null;
+  if (graves.length) S.forEach(s => graves.forEach(i => { if (i.approx) return; if (Math.abs(i.lat - s.lat) > 2 || Math.abs(i.lon - s.lon) > 2) return; const d = hav(s.lat, s.lon, i.lat, i.lon); if (d < gmin) { gmin = d; gsite = s; ginc = i; } }));
+  const cards = [[fmt(n), "sites analysés"], [n ? pct(na, n) + " %" : "—", "sites en Normal ou Attention"], [fmt(ad), "sites en adaptation opérationnelle", ad ? "red" : ""],
+    [fmt(ve), "sites en veille renforcée"], [fmt(I.length), "incidents (filtres)"], [fmt(graves.length), "incidents graves", graves.length ? "red" : ""],
+    [fmt(tues), "tués", tues ? "red" : ""], [fmt(bl), "blessés"], [isFinite(gmin) ? fmt(gmin, 1) + " km" : "—", "grave le plus proche d’un site"]];
+  $("#cards").innerHTML = cards.map(([v, l, c]) => `<div class="card ${c || ""}"><b>${v}</b><span>${l}</span></div>`).join("");
+  const RS = regionStats(), regs = Object.entries(RS).map(([k, v]) => ({ k, iso: k.split("|")[0], name: k.split("|")[1], ...v })).filter(r => r.name);
+  const active = regs.filter(r => r.inc).sort((a, b) => (b.inc || 0) - (a.inc || 0)).slice(0, 3);
+  const adNames = S.filter(s => postOf(s) === "adapt").map(s => (s.ville || "").split("/")[0].trim()).filter((v, i, a) => v && a.indexOf(v) === i).slice(0, 4);
+  const dates = I.map(i => i.date).filter(Boolean).sort();
+  const periodTxt = state.d0 || state.d1 ? `Du ${frDate(state.d0 || dates[0])} au ${frDate(state.d1 || dates[dates.length - 1])}` : dates.length ? `Du ${frDate(dates[0])} au ${frDate(dates[dates.length - 1])}` : "Sur la période";
+  $("#lecture").innerHTML = !INC.length ? `Aucun incident n’est chargé : tous les sites sont au niveau « Normal ». Importez la base sécuritaire de la période dans l’onglet <b>Sécurité</b> (ou cochez la base Mali) pour évaluer les sites et les régions.` :
+    `${periodTxt} : <b>${n ? pct(na, n) : 0} %</b> des sites fonctionnent en conditions Normal ou Attention. <b>${ad}</b> site(s) en adaptation opérationnelle${adNames.length ? ` (${adNames.map(esc).join(", ")})` : ""} et <b>${ve}</b> en veille renforcée. ${fmt(I.length)} incident(s) localisé(s), dont ${graves.length} grave(s)${active.length ? ` ; régions les plus actives : ${active.map(r => `${esc(r.name)} (${r.inc})`).join(", ")}` : ""}.${gsite ? ` Grave le plus proche d’un site : <b>${fmt(gmin, 1)} km</b> (${esc(gsite.nom)}, ${esc((gsite.ville || "").split("/")[0])})${ginc.prec && !/GPS/.test(ginc.prec) ? ", position de l’incident estimée" : ""}.` : ""}`;
+  $("#by-country").innerHTML = `<thead><tr><th>Pays</th><th>Sites</th><th>Adapt.</th><th>Veille</th><th>Incidents</th></tr></thead><tbody>` + ["BFA", "MLI", "NER"].map(iso => { const s = S.filter(x => x.iso === iso), i = I.filter(x => x.iso === iso); return `<tr class="click" data-iso="${iso}"><td><b>${COUNTRY[iso]}</b></td><td class="num">${fmt(s.length)}${!SITES.some(x => x.iso === iso) ? ` <span class="note">à importer</span>` : ""}</td><td class="num crit">${s.filter(x => postOf(x) === "adapt").length || "·"}</td><td class="num warn">${s.filter(x => postOf(x) === "veille").length || "·"}</td><td class="num">${i.length || "·"}</td></tr>`; }).join("") + "</tbody>";
+  $("#by-country tbody").onclick = e => { const tr = e.target.closest("tr[data-iso]"); if (!tr) return; state.iso = tr.dataset.iso; state.reg = state.prov = ""; $("#f-iso").value = state.iso; refreshFilterOptions(); update(); fitFilter(); };
+  const top = regs.sort((a, b) => regionLevel(b) - regionLevel(a) || (b.adapt || 0) - (a.adapt || 0) || (b.inc || 0) - (a.inc || 0) || b.sites - a.sites).slice(0, 8);
+  $("#by-region").innerHTML = `<thead><tr><th>Région</th><th>Sites</th><th>Inc.</th><th>Niveau</th></tr></thead><tbody>` + top.map(r => `<tr class="click" data-iso="${r.iso}" data-r="${esc(r.name)}"><td>${esc(r.name)} <span class="note">${r.iso}</span></td><td class="num">${fmt(r.sites || 0)}</td><td class="num">${r.inc || "·"}</td><td><span class="lvl" style="--c:var(${LEVELS[regionLevel(r)][1]})">${LEVELS[regionLevel(r)][0]}</span></td></tr>`).join("") + "</tbody>";
+  $("#by-region tbody").onclick = e => { const tr = e.target.closest("tr[data-r]"); if (!tr) return; state.iso = tr.dataset.iso; state.reg = tr.dataset.r; state.prov = ""; $("#f-iso").value = state.iso; refreshFilterOptions(); update(); fitFilter(); };
+  $("#f-count").textContent = `${fmt(n)} site(s) et ${fmt(I.length)} incident(s) correspondent aux filtres.`;
+}
+
+/* ================= Liste des sites ================= */
+let listLimit = 150;
+function renderSitesList() {
+  const S = sitesF().sort((a, b) => PRANK[postOf(b)] - PRANK[postOf(a)] || a.nom.localeCompare(b.nom, "fr"));
+  $("#sites-h").textContent = state.reg ? `Sites · ${state.reg}${state.prov ? " / " + state.prov : ""}` : state.iso ? `Sites · ${COUNTRY[state.iso]}` : "Sites · 3 pays";
+  $("#sites-n").textContent = `${fmt(S.length)} site(s)`;
+  $("#sites-list").innerHTML = S.slice(0, listLimit).map(s => { const p = POST.find(x => x.k === postOf(s)); return `<button type="button" class="item" data-id="${s.id}"><span class="dot" style="--c:var(${p.v})"></span><span>${esc(s.nom)}</span><span class="mono note">${s.id}</span><small>${esc(s.ville)} · ${esc(s.region)} / ${esc(s.province)}${s.qc !== "OK" ? " · position à vérifier" : ""}</small></button>`; }).join("") || `<p class="note">Aucun site ne correspond aux filtres.</p>`;
+  $("#sites-more").hidden = S.length <= listLimit;
+  $("#sites-list").onclick = e => { const b = e.target.closest(".item"); if (b) focusSite(b.dataset.id); };
+}
+function focusSite(id) {
+  const s = SITES.find(x => String(x.id) === String(id)); if (!s) return;
+  map.flyTo([s.lat, s.lon], Math.max(map.getZoom(), 13), { duration: .8 });
+  setTimeout(() => { const m = siteMarkers.get(s.id); if (!m) return; if (view.lyr.cluster) siteLayer.zoomToShowLayer(m, () => m.openPopup()); else m.openPopup(); }, 850);
+}
+
+/* ================= Import / export ================= */
+function readTable(file, cb) {
+  const ext = file.name.split(".").pop().toLowerCase(), r = new FileReader();
+  r.onload = () => {
+    try {
+      if (ext === "json" || ext === "geojson") { const g = JSON.parse(r.result); return cb((g.features || []).filter(f => f.geometry && f.geometry.type === "Point").map(f => ({ ...f.properties, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] }))); }
+      const wb = ext === "csv" || ext === "txt" ? XLSX.read(r.result, { type: "string", FS: (String(r.result).split("\n")[0].match(/;/g) || []).length ? ";" : "," }) : XLSX.read(r.result, { type: "array", cellDates: true });
+      cb(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" }));
+    } catch (e) { toast("Fichier illisible : " + e.message); }
+  };
+  ext === "csv" || ext === "txt" || ext === "json" || ext === "geojson" ? r.readAsText(file) : r.readAsArrayBuffer(file);
+}
+function importSites(rows, name) {
+  let added = 0, fixed = 0, bad = 0;
+  const out = [];
+  rows.forEach((o, k) => {
+    let lat = num(pick(o, /^latitude$/, /^lat$/, /^y$/)), lon = num(pick(o, /^longitude$/, /^lon$/, /^lng$/, /^x$/));
+    if (lat == null || lon == null) { bad++; return; }
+    const declared = ISO_OF[norm(pick(o, /^pays$/, /^country$/))] || "";
+    let g = geocode(lat, lon), qc = "OK", det = "";
+    if (declared && g.iso !== declared && lon > 0) { const g2 = geocode(lat, -lon); if (g2.iso === declared) { lon = -lon; g = g2; qc = "Corrigé"; det = "Signe de la longitude manquant : longitude rendue négative."; fixed++; } }
+    if (declared && g.iso !== declared && qc === "OK") { qc = "Hors pays déclaré"; det = `Coordonnées hors du pays déclaré (${COUNTRY[declared]}).`; }
+    if (!g.iso && !declared) { bad++; return; }
+    const iso = g.iso && ["BFA", "MLI", "NER"].includes(g.iso) ? g.iso : declared;
+    const act = parseDate(pick(o, /date d.?activation/, /^activation$/, /^date$/));
+    out.push({ id: String(pick(o, /^numdist$/, /^id$/, /^code$/, /num/) ?? `${iso}-${k + 1}`), nom: String(pick(o, /^nom$/, /^name$/, /site/) ?? "Site sans nom").trim(), pays: COUNTRY[iso] || "", iso,
+      ville: String(pick(o, /^ville$/, /localit/, /^commune$/) ?? "").trim(), adresse: String(pick(o, /^adresse$/, /address/) ?? "").trim(), lat: +lat.toFixed(6), lon: +lon.toFixed(6),
+      zone: String(pick(o, /^zone 5$/, /^zone$/) ?? ""), secteur: String(pick(o, /sectoris/, /secteur/) ?? ""), region: g.region, province: g.province, region_declaree: String(pick(o, /^region$/) ?? ""),
+      activation: act, annee: act ? +act.slice(0, 4) : null, qc, qc_detail: det, src: name });
+    added++;
+  });
+  const keys = new Map(out.map(s => [s.lat + "," + s.lon, 0])); out.forEach(s => keys.set(s.lat + "," + s.lon, keys.get(s.lat + "," + s.lon) + 1));
+  out.forEach(s => { if (keys.get(s.lat + "," + s.lon) > 1 && s.qc === "OK") { s.qc = "Coordonnées partagées"; s.qc_detail = "Même position exacte qu’au moins un autre site."; } });
+  const ids = new Set(out.map(s => s.id));
+  IMP_SITES = IMP_SITES.filter(s => !ids.has(s.id)).concat(out);
+  const saved = store.set("ss-sites", IMP_SITES);
+  rebuild(); refreshFilterOptions(); recompute();
+  const per = ["BFA", "MLI", "NER"].map(i => `${COUNTRY[i]} ${out.filter(s => s.iso === i).length}`).join(", ");
+  $("#sites-import").innerHTML = `<b>${added}</b> site(s) importé(s) depuis ${esc(name)} (${per}). ${fixed} longitude(s) corrigée(s), ${bad} ligne(s) ignorée(s) sans coordonnées.${saved ? " Les sites sont conservés dans ce navigateur." : " <span class='warn'>Trop volumineux pour être conservé : à réimporter à la prochaine visite.</span>"}`;
+  if (out.length) map.flyToBounds(L.latLngBounds(out.map(s => [s.lat, s.lon])), { padding: [30, 30] });
+}
+function importIncidents(rows, name) {
+  const TYPE_GRAVE = /attaque|embuscade|eei|engin|explosi|enl[eè]vement|kidnap|assassinat|kamikaze|frappe|massacre/i;
+  const out = rows.map((o, k) => {
+    const lat = num(pick(o, /^lat/, /^y$/)), lon = num(pick(o, /^lon/, /^lng$/, /^x$/));
+    if (lat == null || lon == null) return null;
+    const type = String(pick(o, /^type/, /typolog/, /^mode/, /categor/) ?? "Incident").trim();
+    const tues = num(pick(o, /^tues?$/, /morts?/, /^killed/, /deces/)) || 0, bl = num(pick(o, /^blesses?/, /injur/)) || 0;
+    const gv = norm(pick(o, /^grav/, /^grave$/, /severit/) ?? "");
+    const grave = gv ? /oui|yes|grave|eleve|haut|critique|majeur|^1$|true/.test(gv) : tues >= 1 || bl >= 3 || TYPE_GRAVE.test(type);
+    const prec = String(pick(o, /^precision/) ?? "");
+    return { id: String(pick(o, /^id_incident$/, /^id$/) ?? `IMP-${k + 1}`), lat, lon, date: parseDate(pick(o, /^date/)), type, grave, tues, blesses: bl, prec, approx: /province|chef-lieu|commune/i.test(prec), localite: String(pick(o, /localit/, /^lieu/, /^ville/, /^place/) ?? ""),
+      auteur: String(pick(o, /auteur/, /acteur/, /actor/) ?? ""), description: String(pick(o, /^desc/, /detail/, /resume/) ?? ""), source: String(pick(o, /^source/) ?? name), ...geocode(lat, lon) };
+  }).filter(Boolean);
+  IMP_INC = out; const saved = store.set("ss-inc", IMP_INC);
+  rebuild(); refreshFilterOptions(); setPeriod(defaultPeriod()); recompute();
+  $("#inc-status").innerHTML = `<b>${out.length}</b> incident(s) importé(s) depuis ${esc(name)}, dont ${out.filter(i => i.grave).length} grave(s).${saved ? "" : " <span class='warn'>Non conservé dans le navigateur (taille).</span>"}`;
+}
+function dropZone(el, input, fn) {
+  input.onchange = () => input.files[0] && readTable(input.files[0], rows => fn(rows, input.files[0].name));
+  ["dragenter", "dragover"].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); el.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); el.classList.remove("over"); }));
+  el.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) readTable(f, rows => fn(rows, f.name)); });
+}
+function xlsxDownload(sheets, name) {
+  const wb = XLSX.utils.book_new();
+  sheets.forEach(([title, rows]) => { const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Information: "Aucune donnée" }]); ws["!cols"] = Object.keys(rows[0] || { a: 1 }).map(k => ({ wch: Math.min(48, Math.max(10, k.length + 2)) })); XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 31)); });
+  XLSX.writeFile(wb, name);
+}
+const siteRow = s => { const p = POSTURE.get(s.id) || {}; return { "N° distributeur": s.id, Nom: s.nom, Pays: COUNTRY[s.iso] || s.pays, Région: s.region, "Province / cercle": s.province, Ville: s.ville, Adresse: s.adresse, Zone: s.zone, Latitude: s.lat, Longitude: s.lon,
+  "Niveau de sûreté": POST.find(x => x.k === (p.k || "normal")).label, [`Incidents ≤ ${state.r1} km`]: p.n1 || 0, [`Incidents ≤ ${state.r3} km`]: p.n3 || 0, "Incident le plus proche (km)": isFinite(p.dmin) ? +p.dmin.toFixed(1) : "", "Géolocalisation": s.qc, Activation: s.activation || "" }; };
+function initImportExport() {
+  dropZone($("#drop-sites"), $("#file-sites"), importSites);
+  dropZone($("#drop-inc"), $("#file-inc"), importIncidents);
+  $("#sites-more").onclick = () => { listLimit += 300; renderSitesList(); };
+  $("#exp-sites").onclick = () => xlsxDownload([["Sites", sitesF().map(siteRow)]], `sites_${state.iso || "3pays"}_${iso2(new Date())}.xlsx`);
+  $("#exp-sites-geo").onclick = () => { const fc = { type: "FeatureCollection", features: sitesF().map(s => ({ type: "Feature", geometry: { type: "Point", coordinates: [s.lon, s.lat] }, properties: siteRow(s) })) }; const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(fc)], { type: "application/geo+json" })); a.download = `sites_${iso2(new Date())}.geojson`; a.click(); };
+  $("#clear-sites").onclick = () => { IMP_SITES = []; store.set("ss-sites", []); rebuild(); refreshFilterOptions(); recompute(); $("#sites-import").textContent = "Sites importés retirés."; };
+  $("#clear-inc").onclick = () => { IMP_INC = []; store.set("ss-inc", []); rebuild(); setPeriod("all"); refreshFilterOptions(); recompute(); $("#inc-status").textContent = "Incidents importés retirés."; };
+  $("#use-mali").checked = state.useMali; $("#n-mali").textContent = MALI_INC.length;
+  $("#use-mali").onchange = e => { state.useMali = e.target.checked; store.set("ss-mali", state.useMali); rebuild(); setPeriod("all"); refreshFilterOptions(); recompute(); };
+  $("#tpl-inc").onclick = () => xlsxDownload([["Incidents", [{ date: "2026-10-18", lat: 12.37, lon: -1.52, type: "Attaque", gravite: "grave", tues: 2, blesses: 1, localite: "Exemple (à remplacer)", region: "", auteur: "", description: "Ligne d’exemple : supprimez-la avant l’import.", source: "" }]]], "modele_import_incidents.xlsx");
+  $("#exp-inc").onclick = () => xlsxDownload([["Incidents", incF().map(i => ({ Date: i.date, Type: i.type, Grave: i.grave ? "oui" : "non", Tués: i.tues || 0, Blessés: i.blesses || 0, Localité: i.localite, Pays: COUNTRY[i.iso] || "", Région: i.region, Province: i.province, Latitude: i.lat, Longitude: i.lon, Auteur: i.auteur || "", Description: i.description || "", Source: i.source || "", "Précision de la position": i.prec || "" }))]], `incidents_${iso2(new Date())}.xlsx`);
+  $("#exp-eval").onclick = () => {
+    const RS = regionStats();
+    const regs = Object.entries(RS).filter(([k]) => k.split("|")[1]).map(([k, v]) => ({ Pays: COUNTRY[k.split("|")[0]] || "", Région: k.split("|")[1], Sites: v.sites || 0, "Sites en adaptation": v.adapt || 0, "Sites en veille": v.veille || 0, Incidents: v.inc || 0, Graves: v.grave || 0, Tués: v.tues || 0, Niveau: LEVELS[regionLevel(v)][0] }));
+    const per = state.d0 || state.d1 ? `${frDate(state.d0)} au ${frDate(state.d1)}` : "toute la période";
+    xlsxDownload([["Régions", regs], ["Sites", sitesF().map(siteRow)], ["Paramètres", [{ Période: per, "Rayon adaptation (km)": state.r1, "Rayon veille (km)": state.r2, "Rayon attention (km)": state.r3, Incidents: incF().length, "Généré le": new Date().toLocaleString("fr-FR") }]]], `evaluation_surete_${iso2(new Date())}.xlsx`);
+  };
+  ["r1", "r2", "r3"].forEach(k => $("#" + k).onchange = e => { state[k] = Math.max(1, +e.target.value || state[k]); recompute(); });
+}
+function renderSecurity() {
+  $("#rules-txt").textContent = `Adaptation opérationnelle : incident grave à ${state.r1} km ou moins, ou 3 incidents dans ce rayon. Veille renforcée : grave à ${state.r2} km ou moins, ou 2 incidents. Attention : au moins un incident à ${state.r3} km ou moins. Sinon : Normal. Les incidents à position approximative (commune ou province) ne font passer un site qu’en « Attention ».`;
+  const RS = regionStats(), regs = Object.entries(RS).filter(([k]) => k.split("|")[1]).map(([k, v]) => ({ iso: k.split("|")[0], name: k.split("|")[1], ...v })).sort((a, b) => regionLevel(b) - regionLevel(a) || (b.inc || 0) - (a.inc || 0) || (b.sites || 0) - (a.sites || 0));
+  $("#reg-eval").innerHTML = `<thead><tr><th>Région</th><th>Sites</th><th>Inc. / graves</th><th>Niveau</th></tr></thead><tbody>` + (regs.map(r => `<tr class="click" data-iso="${r.iso}" data-r="${esc(r.name)}"><td>${esc(r.name)} <span class="note">${r.iso}</span></td><td class="num">${fmt(r.sites || 0)}${r.adapt ? ` <span class="crit">· ${r.adapt} adapt.</span>` : ""}</td><td class="num">${r.inc || 0} / ${r.grave || 0}</td><td><span class="lvl" style="--c:var(${LEVELS[regionLevel(r)][1]})">${LEVELS[regionLevel(r)][0]}</span></td></tr>`).join("") || `<tr><td colspan="4" class="note">Aucune donnée.</td></tr>`) + "</tbody>";
+  $("#reg-eval tbody").onclick = e => { const tr = e.target.closest("tr[data-r]"); if (!tr) return; state.iso = tr.dataset.iso; state.reg = tr.dataset.r; state.prov = ""; $("#f-iso").value = state.iso; refreshFilterOptions(); update(); fitFilter(); };
+}
+
+/* ================= Itinéraires ================= */
+let GRAPH = null;
+function graph() {
+  if (GRAPH) return GRAPH;
+  const N = DATA.graph.nodes, adj = N.map(() => []);
+  DATA.graph.edges.forEach(([a, b, w]) => { adj[a].push([b, w]); adj[b].push([a, w]); });
+  return GRAPH = { N, adj };
+}
+function localRoute(pts) {
+  const { N, adj } = graph();
+  const snap = p => { let best = 0, bd = Infinity; for (let i = 0; i < N.length; i++) { const d = (N[i][0] - p[1]) ** 2 + (N[i][1] - p[0]) ** 2; if (d < bd) { bd = d; best = i; } } return best; };
+  let coords = [], dist = 0;
+  for (let k = 1; k < pts.length; k++) {
+    const s = snap(pts[k - 1]), t = snap(pts[k]);
+    const D = new Float64Array(N.length).fill(Infinity), P = new Int32Array(N.length).fill(-1); D[s] = 0;
+    const heap = [[0, s]];
+    const push = x => { heap.push(x); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+    while (heap.length) { const [d, u] = pop(); if (u === t) break; if (d > D[u]) continue; for (const [v, w] of adj[u]) if (d + w < D[v]) { D[v] = d + w; P[v] = u; push([d + w, v]); } }
+    if (!isFinite(D[t])) return null;
+    const path = []; for (let u = t; u !== -1; u = P[u]) path.push([N[u][1], N[u][0]]);
+    path.reverse();
+    const leg = [pts[k - 1], ...path, pts[k]];
+    dist += D[t] + hav(pts[k - 1][0], pts[k - 1][1], N[s][1], N[s][0]) + hav(pts[k][0], pts[k][1], N[t][1], N[t][0]);
+    coords = coords.concat(k > 1 ? leg.slice(1) : leg);
+  }
+  return { coords, km: dist, hours: null, engine: "Réseau routier intégré (Natural Earth, hors ligne)" };
+}
+async function osrmRoute(pts) {
+  const url = `https://router.project-osrm.org/route/v1/driving/${pts.map(p => p[1].toFixed(5) + "," + p[0].toFixed(5)).join(";")}?overview=full&geometries=geojson`;
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 9000);
+  try { const r = await fetch(url, { signal: ctl.signal }); const j = await r.json(); clearTimeout(to); if (j.code !== "Ok") return null; const rt = j.routes[0]; return { coords: rt.geometry.coordinates.map(c => [c[1], c[0]]), km: rt.distance / 1000, hours: rt.duration / 3600, legs: rt.legs.map(l => ({ km: l.distance / 1000, h: l.duration / 3600 })), engine: "Itinéraire routier OpenStreetMap (OSRM)" }; }
+  catch (e) { clearTimeout(to); return null; }
+}
+async function route(pts, engine) { return (engine !== "local" && await osrmRoute(pts)) || localRoute(pts); }
+function resolvePlace(txt) {
+  const t = norm(txt); if (!t) return null;
+  if (t.startsWith("site:")) { const s = SITES.find(x => String(x.id) === txt.slice(5)); return s ? { name: s.nom, lat: s.lat, lon: s.lon, site: s } : null; }
+  const m = txt.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)\s*$/); if (m) return { name: `${num(m[1]).toFixed(4)}, ${num(m[2]).toFixed(4)}`, lat: num(m[1]), lon: num(m[2]) };
+  const sm = txt.match(/\[(\w[\w-]*)\]\s*$/); if (sm) { const s = SITES.find(x => String(x.id) === sm[1]); if (s) return { name: s.nom, lat: s.lat, lon: s.lon, site: s }; }
+  const p = DATA.places.find(p => norm(p.name) === t) || DATA.places.find(p => norm(p.name).startsWith(t));
+  if (p) return { name: p.name, lat: p.lat, lon: p.lon };
+  const s = SITES.find(x => norm(x.nom) === t || String(x.id) === txt.trim()); return s ? { name: s.nom, lat: s.lat, lon: s.lon, site: s } : null;
+}
+function fillPlaces() { $("#places").innerHTML = DATA.places.map(p => `<option value="${esc(p.name)}">${COUNTRY[p.iso] || ""}</option>`).join("") + SITES.slice(0, 3000).map(s => `<option value="${esc(s.nom)} [${esc(s.id)}]">${esc(s.ville)}</option>`).join(""); }
+function distToPath(lat, lon, path, cum) {
+  const kx = 111.32 * Math.cos(lat * R), ky = 110.6; let best = Infinity, at = 0;
+  for (let i = 1; i < path.length; i++) {
+    const ax = (path[i - 1][1] - lon) * kx, ay = (path[i - 1][0] - lat) * ky, bx = (path[i][1] - lon) * kx, by = (path[i][0] - lat) * ky;
+    const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy; let t = L2 ? -(ax * dx + ay * dy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(ax + t * dx, ay + t * dy); if (d < best) { best = d; at = cum[i - 1] + t * (cum[i] - cum[i - 1]); }
+  }
+  return [best, at];
+}
+function analyseRoute(rt, buf) {
+  const P = rt.coords, cum = [0]; for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + hav(P[i - 1][0], P[i - 1][1], P[i][0], P[i][1]));
+  const total = cum[cum.length - 1];
+  const bb = P.reduce((b, p) => [Math.min(b[0], p[0]), Math.min(b[1], p[1]), Math.max(b[2], p[0]), Math.max(b[3], p[1])], [90, 180, -90, -180]);
+  const pad = buf / 100 + .05, inBB = (la, lo) => la >= bb[0] - pad && la <= bb[2] + pad && lo >= bb[1] - pad && lo <= bb[3] + pad;
+  const sites = SITES.filter(s => inBB(s.lat, s.lon)).map(s => { const [d, at] = distToPath(s.lat, s.lon, P, cum); return { s, d, at }; }).filter(x => x.d <= buf).sort((a, b) => a.at - b.at);
+  const incs = PER.filter(i => inBB(i.lat, i.lon)).map(i => { const [d, at] = distToPath(i.lat, i.lon, P, cum); return { i, d, at }; }).filter(x => x.d <= buf).sort((a, b) => a.at - b.at);
+  const step = Math.max(5, total / 60), segs = [];
+  for (let a = 0; a < total; a += step) {
+    const b = Math.min(total, a + step), here = incs.filter(x => x.at >= a - buf && x.at <= b + buf);
+    const exact = here.filter(x => !x.i.approx);
+    const lvl = exact.some(x => x.i.grave) ? 3 : exact.length >= 2 ? 2 : here.length ? 1 : 0;
+    const pts = []; for (let i = 0; i < P.length; i++) { if (cum[i] >= a && cum[i] <= b) pts.push(P[i]); }
+    const i0 = cum.findIndex(c => c >= a), i1 = cum.findIndex(c => c >= b);
+    segs.push({ a, b, lvl, pts: P.slice(Math.max(0, i0 - 1), (i1 < 0 ? P.length : i1) + 1) });
+  }
+  const lvl = segs.reduce((m, s) => Math.max(m, s.lvl), 0);
+  const exposedKm = segs.filter(s => s.lvl >= 2).reduce((a, s) => a + (s.b - s.a), 0);
+  return { total, sites, incs, segs, lvl, exposedKm, path: P };
+}
+const SEG_COL = ["--normal", "--attention", "--veille", "--adapt"];
+const ROUTE_LVL = ["Faible", "Modéré", "Élevé", "Critique"];
+function drawRoute(an, pts) {
+  if (view.routeLayer) map.removeLayer(view.routeLayer);
+  const g = L.layerGroup();
+  // liseré blanc continu sous l'ensemble du trajet, puis les tronçons colorés par niveau d'exposition
+  g.addLayer(L.polyline(an.path, { pane: "route", color: "#ffffff", weight: 9, opacity: .95, lineJoin: "round" }));
+  an.segs.forEach(s => { if (s.pts.length > 1) g.addLayer(L.polyline(s.pts, { pane: "route", color: cssv(SEG_COL[s.lvl]), weight: 5, opacity: 1, lineJoin: "round", lineCap: "round" })); });
+  pts.forEach((p, k) => g.addLayer(L.circleMarker([p.lat, p.lon], { pane: "route", radius: 7, color: "#fff", weight: 2.5, fillColor: cssv("--accent"), fillOpacity: 1 }).bindTooltip(`${k === 0 ? "Départ" : k === pts.length - 1 ? "Arrivée" : "Étape " + k} : ${esc(p.name)}`, { permanent: false })));
+  view.routeLayer = g.addTo(map); view.route = true; renderLegend();
+  map.flyToBounds(L.latLngBounds(an.segs.flatMap(s => s.pts)), { padding: [40, 40], duration: .8 });
+}
+function routeSummary(rt, an, buf, avg) {
+  const h = rt.hours != null ? rt.hours : an.total / (avg || 60);
+  return `<div class="cards" style="margin-top:10px"><div class="card"><b>${fmt(an.total, 0)}</b><span>km</span></div><div class="card"><b>${Math.floor(h)} h ${String(Math.round((h % 1) * 60)).padStart(2, "0")}</b><span>durée estimée</span></div><div class="card ${an.lvl >= 2 ? "red" : ""}"><b>${ROUTE_LVL[an.lvl]}</b><span>exposition du trajet</span></div>
+    <div class="card"><b>${an.sites.length}</b><span>sites à ≤ ${buf} km</span></div><div class="card ${an.incs.length ? "red" : ""}"><b>${an.incs.length}</b><span>incidents à ≤ ${buf} km</span></div><div class="card"><b>${fmt(an.exposedKm, 0)}</b><span>km exposés (élevé ou critique)</span></div></div>
+    <p class="note">${esc(rt.engine)}${PER.length ? "" : " · aucun incident chargé : l’exposition ne peut pas être évaluée"}.</p>`;
+}
+function routeLists(an) {
+  return `${an.incs.length ? `<p class="h" style="margin-top:8px">Incidents le long du trajet</p><table class="tbl"><thead><tr><th>km</th><th>Incident</th><th>Écart</th></tr></thead><tbody>${an.incs.slice(0, 40).map(x => `<tr><td class="num">${fmt(x.at, 0)}</td><td>${x.i.grave ? `<span class="crit">●</span> ` : ""}${esc(x.i.type)} · ${frDate(x.i.date)}<br><span class="note">${esc(x.i.localite || x.i.region || "")}</span></td><td class="num">${fmt(x.d, 1)} km</td></tr>`).join("")}</tbody></table>` : ""}
+    <p class="h" style="margin-top:8px">Sites desservis le long du trajet</p>${an.sites.length ? `<table class="tbl"><thead><tr><th>km</th><th>Site</th><th>Écart</th></tr></thead><tbody>${an.sites.slice(0, 80).map(x => `<tr class="click" data-id="${x.s.id}"><td class="num">${fmt(x.at, 0)}</td><td><span class="dot" style="--c:var(${POST.find(p => p.k === postOf(x.s)).v});display:inline-block;margin-right:4px"></span>${esc(x.s.nom)}<br><span class="note">${esc(x.s.ville)}</span></td><td class="num">${fmt(x.d, 1)} km</td></tr>`).join("")}</tbody></table>${an.sites.length > 80 ? `<p class="note">… et ${an.sites.length - 80} autres.</p>` : ""}` : `<p class="note">Aucun site dans le corridor.</p>`}`;
+}
+let lastItin = null;
+async function runItin() {
+  const a = resolvePlace($("#it-a").value), b = resolvePlace($("#it-b").value), buf = Math.max(1, +$("#it-buf").value || 15);
+  if (!a || !b) { $("#it-res").innerHTML = `<p class="warn">Départ ou arrivée introuvable. Choisissez une localité de la liste, un site, ou saisissez « latitude, longitude ».</p>`; return; }
+  $("#it-res").innerHTML = `<p class="note">Calcul en cours…</p>`;
+  const rt = await route([[a.lat, a.lon], [b.lat, b.lon]], $("#it-eng").value);
+  if (!rt) { $("#it-res").innerHTML = `<p class="warn">Aucun itinéraire trouvé entre ces deux points.</p>`; return; }
+  const an = analyseRoute(rt, buf); drawRoute(an, [a, b]); lastItin = { a, b, rt, an, buf };
+  $("#it-res").innerHTML = routeSummary(rt, an, buf) + `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" id="it-xlsx" type="button">Exporter (Excel)</button><button class="btn sm" id="it-mission" type="button">Utiliser comme trajet</button><a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lon}&destination=${b.lat},${b.lon}&travelmode=driving">Google Maps ↗</a></div>` + routeLists(an);
+  $("#it-res").querySelectorAll("tr[data-id]").forEach(tr => tr.onclick = () => focusSite(tr.dataset.id));
+  $("#it-xlsx").onclick = () => xlsxDownload([["Itinéraire", [{ Départ: a.name, Arrivée: b.name, "Distance (km)": +an.total.toFixed(1), "Exposition": ROUTE_LVL[an.lvl], "Corridor (km)": buf, "Sites dans le corridor": an.sites.length, "Incidents dans le corridor": an.incs.length, Calcul: rt.engine }]], ["Sites", an.sites.map(x => ({ "km depuis le départ": +x.at.toFixed(1), "Écart (km)": +x.d.toFixed(1), ...siteRow(x.s) }))], ["Incidents", an.incs.map(x => ({ "km depuis le départ": +x.at.toFixed(1), "Écart (km)": +x.d.toFixed(1), Date: x.i.date, Type: x.i.type, Grave: x.i.grave ? "oui" : "non", Localité: x.i.localite, Région: x.i.region }))]], `itineraire_${norm(a.name).replace(/\W+/g, "-")}_${norm(b.name).replace(/\W+/g, "-")}.xlsx`);
+  $("#it-mission").onclick = () => { mission = [a, b]; renderStops(); switchTab("mission"); };
+}
+
+/* ================= Trajet de mission ================= */
+let mission = store.get("ss-mission", []), lastMission = null;
+function renderStops() {
+  store.set("ss-mission", mission);
+  $("#ms-stops").innerHTML = mission.map((p, k) => `<div class="stop"><span>${esc(p.name)}<br><span class="note mono">${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}</span></span><span class="noprint" style="display:flex;gap:4px"><button class="btn sm" data-up="${k}" type="button" ${k ? "" : "disabled"} aria-label="Monter">↑</button><button class="btn sm" data-del="${k}" type="button" aria-label="Retirer">✕</button></span></div>`).join("") || `<p class="note">Aucune étape. Ajoutez au moins un départ et une arrivée.</p>`;
+  $("#ms-stops").onclick = e => { const u = e.target.closest("[data-up]"), d = e.target.closest("[data-del]"); if (u) { const k = +u.dataset.up; [mission[k - 1], mission[k]] = [mission[k], mission[k - 1]]; renderStops(); } if (d) { mission.splice(+d.dataset.del, 1); renderStops(); } };
+}
+const isNight = d => { const h = d.getHours() + d.getMinutes() / 60; return h >= 18.5 || h < 6; };
+const hm = d => d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+async function runMission() {
+  if (mission.length < 2) { $("#ms-res").innerHTML = `<p class="warn">Ajoutez au moins deux étapes.</p>`; return; }
+  $("#ms-res").innerHTML = `<p class="note">Calcul en cours…</p>`;
+  const speed = Math.max(20, +$("#ms-speed").value || 60), halt = Math.max(0, +$("#ms-halt").value || 0), buf = Math.max(1, +$("#it-buf").value || 15);
+  let t = $("#ms-date").value ? new Date($("#ms-date").value) : new Date(); const start = new Date(t);
+  const legs = []; let all = [];
+  for (let k = 1; k < mission.length; k++) {
+    const rt = await route([[mission[k - 1].lat, mission[k - 1].lon], [mission[k].lat, mission[k].lon]], $("#it-eng").value);
+    if (!rt) { $("#ms-res").innerHTML = `<p class="warn">Tronçon ${k} introuvable (${esc(mission[k - 1].name)} → ${esc(mission[k].name)}).</p>`; return; }
+    const an = analyseRoute(rt, buf), h = an.total / speed;
+    const dep = new Date(t), arr = new Date(t.getTime() + h * 36e5);
+    let night = false; for (let x = dep.getTime(); x <= arr.getTime(); x += 15 * 6e4) if (isNight(new Date(x))) { night = true; break; }
+    legs.push({ from: mission[k - 1], to: mission[k], rt, an, dep, arr, night });
+    all = all.concat(rt.coords); t = new Date(arr.getTime() + (k < mission.length - 1 ? halt * 6e4 : 0));
+  }
+  const full = { coords: all, engine: legs[0].rt.engine, hours: null }, anAll = analyseRoute(full, buf);
+  drawRoute(anAll, mission);
+  lastMission = { legs, start, end: t, speed, halt, buf, anAll };
+  const nightLegs = legs.filter(l => l.night).length;
+  $("#ms-res").innerHTML = routeSummary(full, anAll, buf, speed) +
+    `${nightLegs ? `<p class="crit" style="font-family:var(--f-sans);font-size:.86rem">⚠ ${nightLegs} tronçon(s) roulé(s) de nuit (après 18 h 30 ou avant 6 h) : décaler le départ ou prévoir une halte.</p>` : `<p class="ok" style="font-family:var(--f-sans);font-size:.86rem">Tout le trajet se fait de jour.</p>`}
+    <p class="h" style="margin-top:6px">Déroulé</p><div class="timeline">${legs.map((l, k) => `<div class="tl" style="--c:var(--accent)"><span class="t">${hm(l.dep)}</span><span class="bar"></span><div class="d"><b>${k === 0 ? "Départ" : "Reprise"} · ${esc(l.from.name)}</b></div></div>
+      <div class="tl" style="--c:var(${SEG_COL[l.an.lvl]})"><span class="t"></span><span class="bar"></span><div class="d">${fmt(l.an.total, 0)} km · ${Math.floor(l.an.total / speed)} h ${String(Math.round(((l.an.total / speed) % 1) * 60)).padStart(2, "0")} · exposition <b>${ROUTE_LVL[l.an.lvl]}</b>${l.an.incs.length ? ` · ${l.an.incs.length} incident(s) dans le corridor` : ""}${l.night ? ` · <span class="crit">de nuit</span>` : ""}<br><span class="note">${l.an.sites.length} site(s) le long du tronçon</span></div></div>`).join("")}
+      <div class="tl"><span class="t">${hm(legs[legs.length - 1].arr)}</span><span class="bar"></span><div class="d"><b>Arrivée · ${esc(mission[mission.length - 1].name)}</b><br><span class="note">${legs[legs.length - 1].arr.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</span></div></div></div>` + routeLists(anAll);
+  $("#ms-res").querySelectorAll("tr[data-id]").forEach(tr => tr.onclick = () => focusSite(tr.dataset.id));
+  $("#ms-xlsx").disabled = $("#ms-print").disabled = false;
+}
+function initMission() {
+  const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(6, 30, 0, 0);
+  $("#ms-date").value = new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  $("#ms-add-go").onclick = () => { const p = resolvePlace($("#ms-add").value); if (!p) return toast("Localité ou site introuvable."); mission.push(p); $("#ms-add").value = ""; renderStops(); };
+  $("#ms-go").onclick = runMission;
+  $("#ms-clear").onclick = () => { mission = []; renderStops(); $("#ms-res").innerHTML = ""; if (view.routeLayer) map.removeLayer(view.routeLayer); view.route = false; renderLegend(); };
+  $("#ms-print").onclick = () => window.print();
+  $("#ms-xlsx").onclick = () => { const M = lastMission; if (!M) return;
+    xlsxDownload([["Trajet", M.legs.map((l, k) => ({ Tronçon: k + 1, De: l.from.name, Vers: l.to.name, Départ: l.dep.toLocaleString("fr-FR"), Arrivée: l.arr.toLocaleString("fr-FR"), "Distance (km)": +l.an.total.toFixed(1), Exposition: ROUTE_LVL[l.an.lvl], "Incidents dans le corridor": l.an.incs.length, "Sites le long": l.an.sites.length, Nuit: l.night ? "oui" : "non" }))],
+      ["Sites", M.anAll.sites.map(x => ({ "km": +x.at.toFixed(1), "Écart (km)": +x.d.toFixed(1), ...siteRow(x.s) }))], ["Incidents", M.anAll.incs.map(x => ({ "km": +x.at.toFixed(1), "Écart (km)": +x.d.toFixed(1), Date: x.i.date, Type: x.i.type, Grave: x.i.grave ? "oui" : "non", Localité: x.i.localite, Région: x.i.region }))],
+      ["Paramètres", [{ "Vitesse moyenne (km/h)": M.speed, "Arrêt par étape (min)": M.halt, "Corridor (km)": M.buf, Calcul: M.legs[0].rt.engine, "Généré le": new Date().toLocaleString("fr-FR") }]]], `fiche_mission_${iso2(M.start)}.xlsx`); };
+  renderStops();
+}
+
+/* ================= Recherche, mesure, clic carte ================= */
+function initSearch() {
+  const q = $("#q"), ul = $("#sugg");
+  q.oninput = () => {
+    const t = norm(q.value); if (t.length < 2) { ul.hidden = true; return; }
+    const res = [];
+    SITES.forEach(s => { if (res.length < 8 && (norm(s.nom).includes(t) || String(s.id).startsWith(t) || norm(s.ville).includes(t))) res.push({ k: "site", s }); });
+    DATA.places.forEach(p => { if (res.length < 13 && norm(p.name).startsWith(t)) res.push({ k: "place", p }); });
+    INC.forEach(i => { if (res.length < 16 && (norm(i.localite).includes(t) || norm(i.type).includes(t))) res.push({ k: "inc", i }); });
+    ul.innerHTML = res.map((r, n) => `<li><button type="button" data-n="${n}">${r.k === "site" ? `${esc(r.s.nom)} <small>site n° ${esc(r.s.id)} · ${esc(r.s.ville)}</small>` : r.k === "place" ? `${esc(r.p.name)} <small>localité · ${COUNTRY[r.p.iso] || ""}</small>` : `${esc(r.i.type)} <small>incident · ${frDate(r.i.date)} · ${esc(r.i.localite)}</small>`}</button></li>`).join("") || `<li class="note" style="padding:6px">Aucun résultat</li>`;
+    ul.hidden = false; ul._res = res;
+  };
+  ul.onclick = e => { const b = e.target.closest("button[data-n]"); if (!b) return; const r = ul._res[+b.dataset.n]; ul.hidden = true; q.value = "";
+    if (r.k === "site") focusSite(r.s.id); else if (r.k === "place") map.flyTo([r.p.lat, r.p.lon], 11); else map.flyTo([r.i.lat, r.i.lon], 11); };
+  document.addEventListener("click", e => { if (!e.target.closest(".search")) ul.hidden = true; });
+  q.onkeydown = e => { if (e.key === "Enter") { const b = ul.querySelector("button"); if (b) b.click(); } if (e.key === "Escape") ul.hidden = true; };
+}
+let measuring = false, picking = false, mPts = [], mLayer = null;
+function initMeasure() {
+  $("#measure").onclick = () => { measuring = !measuring; $("#measure").setAttribute("aria-pressed", measuring); map.getContainer().style.cursor = measuring ? "crosshair" : ""; if (!measuring) endMeasure(true); else toast("Cliquez pour placer des points · double-clic ou Échap pour terminer."); };
+  map.on("dblclick", e => { if (measuring) { L.DomEvent.stop(e); endMeasure(false); } });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && measuring) endMeasure(false); });
+}
+function endMeasure(clear) { measuring = false; $("#measure").setAttribute("aria-pressed", "false"); map.getContainer().style.cursor = ""; map.doubleClickZoom.enable(); if (clear && mLayer) { map.removeLayer(mLayer); mLayer = null; } mPts = []; }
+function onMapClick(e) {
+  if (measuring) {
+    map.doubleClickZoom.disable();
+    mPts.push(e.latlng); if (mLayer) map.removeLayer(mLayer);
+    let d = 0; for (let i = 1; i < mPts.length; i++) d += hav(mPts[i - 1].lat, mPts[i - 1].lng, mPts[i].lat, mPts[i].lng);
+    mLayer = L.layerGroup([L.polyline(mPts, { color: cssv("--ink"), weight: 2.5, dashArray: "6 5" }), ...mPts.map(p => L.circleMarker(p, { radius: 4, color: cssv("--ink"), fillColor: cssv("--surface"), fillOpacity: 1, weight: 2 }))]).addTo(map);
+    if (mPts.length > 1) L.tooltip({ permanent: true, direction: "right", className: "measure-tip", offset: [8, 0] }).setLatLng(e.latlng).setContent(`${fmt(d, d < 10 ? 2 : 1)} km`).addTo(mLayer);
+    return;
+  }
+  if (picking) {
+    const v = `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+    if (!$("#it-a").value) $("#it-a").value = v; else $("#it-b").value = v;
+    if ($("#it-a").value && $("#it-b").value) { picking = false; $("#it-pick").setAttribute("aria-pressed", "false"); map.getContainer().style.cursor = ""; }
+  }
+}
+
+/* ================= Couches ================= */
+function renderBaseChips() {
+  $("#bases").innerHTML = Object.entries(BASES).map(([k, b]) => `<button type="button" class="chip" data-b="${k}" aria-pressed="${view.base === k}">${b.label}</button>`).join("");
+  $("#bases").onclick = e => { const b = e.target.closest("[data-b]"); if (b) setBase(b.dataset.b); };
+}
+function initCouches() {
+  renderBaseChips();
+  const L_ = [["sites", "Sites"], ["cluster", "Regrouper les sites"], ["incidents", "Incidents"], ["rings", "Cercles des incidents graves"], ["regions", "Régions"], ["subs", "Provinces / cercles"], ["roads", "Routes"], ["rivers", "Hydrographie"], ["towns", "Localités"], ["labels", "Noms des pays et régions"]];
+  $("#lyr").innerHTML = L_.map(([k, l]) => `<button type="button" class="chip" data-l="${k}" aria-pressed="${view.lyr[k]}">${l}</button>`).join("");
+  $("#lyr").onclick = e => { const b = e.target.closest("[data-l]"); if (!b) return; const k = b.dataset.l; view.lyr[k] = !view.lyr[k]; b.setAttribute("aria-pressed", view.lyr[k]); applyLayers(); renderLabels(); renderSites(); renderIncidents(); };
+  const C = [["none", "Aucune"], ["threat", "Niveau de menace"], ["sites", "Densité de sites"]];
+  $("#choro").innerHTML = C.map(([k, l]) => `<button type="button" class="chip" data-c="${k}" aria-pressed="${view.choro === k}">${l}</button>`).join("");
+  $("#choro").onclick = e => { const b = e.target.closest("[data-c]"); if (!b) return; view.choro = b.dataset.c; document.querySelectorAll("#choro .chip").forEach(x => x.setAttribute("aria-pressed", x.dataset.c === view.choro)); layers.regions.setStyle(regionStyle); renderLegend(); };
+  $("#data-note").textContent = `Données : ${fmt(BASE_SITES.length)} sites intégrés (mise à jour du ${frDate(DATA.generated)})${IMP_SITES.length ? `, ${fmt(IMP_SITES.length)} importés dans ce navigateur` : ""}. Les imports restent dans ce navigateur : pour les partager avec l’équipe, intégrez-les à la prochaine publication du site.`;
+}
+function switchTab(p) { document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.p === p)); document.querySelectorAll(".panel").forEach(x => x.hidden = x.id !== "p-" + p); }
+
+/* ================= Rendu ================= */
+function update() {
+  RSTATS = regionStats();
+  if (layers.regions) layers.regions.setStyle(regionStyle);
+  renderSites(); renderIncidents(); renderSynthese(); renderSitesList(); renderSecurity(); renderLegend(); renderLabels();
+}
+function recompute() { computePosture(); renderPeriods(); update(); }
+window.SS = {
+  toMission(ref) { const p = resolvePlace(ref); if (p) { mission.push(p); renderStops(); switchTab("mission"); toast(`« ${p.name} » ajouté au trajet.`); } },
+  itinFrom(ref) { $("#it-a").value = ref.startsWith("site:") ? (() => { const s = SITES.find(x => String(x.id) === ref.slice(5)); return s ? `${s.nom} [${s.id}]` : ""; })() : ref; switchTab("itin"); $("#it-b").focus(); },
+};
+function boot() {
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => switchTab(b.dataset.p));
+  if (!window.L) { $("#map").innerHTML = `<p style="padding:20px">La bibliothèque cartographique n’a pas pu être chargée (lib/leaflet.js). Rechargez la page.</p>`; return; }
+  initMap(); initFilters(); initImportExport(); initSearch(); initMeasure(); initCouches(); initMission(); fillPlaces();
+  $("#it-go").onclick = runItin;
+  $("#it-pick").onclick = () => { picking = !picking; $("#it-pick").setAttribute("aria-pressed", picking); map.getContainer().style.cursor = picking ? "crosshair" : ""; if (picking) { $("#it-a").value = ""; $("#it-b").value = ""; toast("Cliquez le départ puis l’arrivée sur la carte."); } };
+  $("#it-clear").onclick = () => { if (view.routeLayer) map.removeLayer(view.routeLayer); view.route = false; $("#it-res").innerHTML = ""; renderLegend(); };
+  refreshFilterOptions(); setPeriod(defaultPeriod()); recompute();
+  initialFit();
+  const fromHash = () => { const m = location.hash.match(/^#site-([\w-]+)$/); if (m) setTimeout(() => focusSite(m[1]), 500); };
+  window.addEventListener("hashchange", fromHash); fromHash();
+  const retheme = () => { setBase(view.base); update(); };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  $("#theme").onclick = () => { document.documentElement.dataset.theme = isDark() ? "light" : "dark"; };
+}
+boot();
+})();
+</script>
