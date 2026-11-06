@@ -5,7 +5,7 @@ les limites pays / régions / provinces-cercles-départements, un réseau routie
 (calcul d'itinéraire hors ligne), un répertoire de localités et la base d'incidents Mali.
 
 Usage : python canal_sites/build_app.py <dossier_sources_geo>
-Sorties : dist/app_netlify/ (index.html, _headers, robots.txt) et dist/App_Netlify_Surete_Sites.zip
+Sorties : dist/app_netlify/ (index.html, lib/, _headers, robots.txt) et dist/App_Netlify_Surete_Sites.zip
 """
 import json
 import math
@@ -171,7 +171,9 @@ def write(data):
     shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True)
     (out / "index.html").write_text(page, encoding="utf-8")
-    (out / "_headers").write_text("/*\n  X-Robots-Tag: noindex, nofollow\n  Referrer-Policy: no-referrer\n  X-Frame-Options: DENY\n", encoding="utf-8")
+    shutil.copytree(HERE / "vendor", out / "lib")  # bibliothèques servies par le site lui-même (pas de CDN)
+    (out / "_headers").write_text("/*\n  X-Robots-Tag: noindex, nofollow\n  Referrer-Policy: no-referrer\n  X-Frame-Options: DENY\n"
+                                  "/\n  Cache-Control: no-cache\n/index.html\n  Cache-Control: no-cache\n/lib/*\n  Cache-Control: public, max-age=604800\n", encoding="utf-8")
     (out / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8")
     shutil.make_archive(str(DIST / "App_Netlify_Surete_Sites"), "zip", out)
     return out / "index.html"

@@ -2,8 +2,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link rel="stylesheet" href="lib/leaflet.css">
+<link rel="stylesheet" href="lib/MarkerCluster.css">
 <style>
 /* Poste de sûreté : bandeau (titre, périodes, recherche, outils) · panneau à onglets à gauche · carte plein écran à droite. */
 :root {
@@ -283,9 +283,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   <div class="mapwrap"><div id="map" aria-label="Carte"></div></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="lib/leaflet.js"></script>
+<script src="lib/leaflet.markercluster.js"></script>
+<script defer src="lib/xlsx.full.min.js"></script>
 <script>
 const DATA = /*__DATA__*/null;
 (() => {
@@ -475,7 +475,9 @@ function initMap() {
   map.on("mousemove", e => { const { lat, lng } = e.latlng; $("#coords").textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)} · ${dms(lat, "N", "S")} ${dms(lng, "E", "O")}`; });
   map.on("zoomend", () => { renderLabels(); });
   map.on("click", onMapClick);
-  siteLayer = L.markerClusterGroup({ chunkedLoading: true, showCoverageOnHover: false, maxClusterRadius: 46, disableClusteringAtZoom: 11, spiderfyOnMaxZoom: true,
+  watchMapSize();
+  if (typeof L.markerClusterGroup !== "function") { view.lyr.cluster = false; siteLayer = L.layerGroup(); }
+  else siteLayer = L.markerClusterGroup({ chunkedLoading: true, showCoverageOnHover: false, maxClusterRadius: 46, disableClusteringAtZoom: 11, spiderfyOnMaxZoom: true,
     iconCreateFunction: c => { const ms = c.getAllChildMarkers(); let worst = 0; ms.forEach(m => { worst = Math.max(worst, PRANK[postOf(m.site)]); }); const n = c.getChildCount(); const s = n < 10 ? 28 : n < 100 ? 34 : n < 500 ? 42 : 50; const col = postColor(POST[worst].k);
       return L.divIcon({ html: `<div class="cl" style="width:${s}px;height:${s}px;background:${col}">${n}</div>`, className: "", iconSize: [s, s] }); } });
   drawBase();
@@ -552,7 +554,7 @@ function renderSites() {
   if (view.plainSites) { map.removeLayer(view.plainSites); view.plainSites = null; }
   if (!view.lyr.sites) return;
   const ms = sitesF().map(s => { const m = siteMarker(s); siteMarkers.set(s.id, m); return m; });
-  if (view.lyr.cluster) { siteLayer.addLayers(ms); siteLayer.addTo(map); }
+  if (view.lyr.cluster && siteLayer.addLayers) { siteLayer.addLayers(ms); siteLayer.addTo(map); }
   else { view.plainSites = L.layerGroup(ms).addTo(map); }
 }
 function renderIncidents() {
@@ -579,7 +581,31 @@ function incPopup(i) {
   return `<div class="pop"><h4>${esc(i.type || "Incident")}${i.grave ? ` <span class="lvl" style="--c:var(--adapt)">grave</span>` : ""}</h4><div class="m">${frDate(i.date)} · ${esc(i.localite || "")} · ${esc(i.region || "")}</div>
     <p style="margin:6px 0 0;font-size:.86rem">${esc((i.description || "").slice(0, 280))}</p><dl><dt>Bilan</dt><dd>${i.tues || 0} tué(s) · ${i.blesses || 0} blessé(s)</dd>${i.prec ? `<dt>Position</dt><dd>${esc(i.prec)}${i.approx ? ` <span class="warn">(approximative)</span>` : ""}</dd>` : ""}${i.auteur ? `<dt>Auteur</dt><dd>${esc(i.auteur)}</dd>` : ""}<dt>Source</dt><dd>${esc(i.source || "—")}</dd></dl></div>`;
 }
-function fitCountries(isos) { const fs = G.countries.features.filter(f => isos.includes(f.properties.iso)); if (fs.length) map.flyToBounds(L.geoJSON({ type: "FeatureCollection", features: fs }).getBounds(), { padding: [20, 20], duration: .8 }); }
+let fitted = false;
+function mapReady() { const el = map.getContainer(); return el.clientWidth > 50 && el.clientHeight > 50; }
+function initialFit() { if (mapReady()) { map.invalidateSize({ pan: false }); fitCountries(["BFA", "MLI", "NER"], false); fitted = true; } }
+// Leaflet mémorise la taille du conteneur à l'init : si la page n'est pas encore mise en page
+// (onglet en arrière-plan, aperçu de lien, réseau lent), le canevas naît à 0 px de haut et rien ne s'affiche.
+function watchMapSize() {
+  const el = map.getContainer(); let t = null, last = "";
+  const refresh = () => {
+    const sz = el.clientWidth + "x" + el.clientHeight; if (sz === last) return; last = sz;
+    map.invalidateSize({ pan: false });
+    if (!fitted && !location.hash) initialFit();
+    if (siteLayer && map.hasLayer(siteLayer) && siteLayer.refreshClusters) siteLayer.refreshClusters();
+  };
+  const later = () => { clearTimeout(t); t = setTimeout(refresh, 80); };
+  if (window.ResizeObserver) new ResizeObserver(later).observe(el);
+  ["load", "pageshow", "orientationchange"].forEach(ev => window.addEventListener(ev, later));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) later(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(later);
+  [300, 1000, 2500].forEach(ms => setTimeout(later, ms));
+}
+function fitCountries(isos, animate = true) {
+  const fs = G.countries.features.filter(f => isos.includes(f.properties.iso)); if (!fs.length) return;
+  const b = L.geoJSON({ type: "FeatureCollection", features: fs }).getBounds();
+  if (animate) map.flyToBounds(b, { padding: [20, 20], duration: .8 }); else map.fitBounds(b, { padding: [20, 20], animate: false });
+}
 function fitFilter() {
   if (state.prov) { const f = G.subs.features.find(f => f.properties.name === state.prov && (!state.iso || f.properties.iso === state.iso)); if (f) return map.flyToBounds(L.geoJSON(f).getBounds(), { padding: [30, 30], duration: .8 }); }
   if (state.reg) { const f = G.regions.features.find(f => f.properties.name === state.reg && (!state.iso || f.properties.iso === state.iso)); if (f) return map.flyToBounds(L.geoJSON(f).getBounds(), { padding: [30, 30], duration: .8 }); }
@@ -971,13 +997,13 @@ window.SS = {
 };
 function boot() {
   document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => switchTab(b.dataset.p));
-  if (!window.L) { $("#map").innerHTML = `<p style="padding:20px">La bibliothèque cartographique n’a pas pu être chargée (cdnjs.cloudflare.com).</p>`; return; }
+  if (!window.L) { $("#map").innerHTML = `<p style="padding:20px">La bibliothèque cartographique n’a pas pu être chargée (lib/leaflet.js). Rechargez la page.</p>`; return; }
   initMap(); initFilters(); initImportExport(); initSearch(); initMeasure(); initCouches(); initMission(); fillPlaces();
   $("#it-go").onclick = runItin;
   $("#it-pick").onclick = () => { picking = !picking; $("#it-pick").setAttribute("aria-pressed", picking); map.getContainer().style.cursor = picking ? "crosshair" : ""; if (picking) { $("#it-a").value = ""; $("#it-b").value = ""; toast("Cliquez le départ puis l’arrivée sur la carte."); } };
   $("#it-clear").onclick = () => { if (view.routeLayer) map.removeLayer(view.routeLayer); view.route = false; $("#it-res").innerHTML = ""; renderLegend(); };
   refreshFilterOptions(); setPeriod(defaultPeriod()); recompute();
-  fitCountries(["BFA", "MLI", "NER"]);
+  initialFit();
   const fromHash = () => { const m = location.hash.match(/^#site-([\w-]+)$/); if (m) setTimeout(() => focusSite(m[1]), 500); };
   window.addEventListener("hashchange", fromHash); fromHash();
   const retheme = () => { setBase(view.base); update(); };
